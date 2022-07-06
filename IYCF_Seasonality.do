@@ -657,3 +657,56 @@ marginsplot, title("Exclusive breastfeeding by month of data collection & SES")
 
 * END
 
+
+
+* Variables that represent data from date of data collection
+local ContVars i.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
+logit bottle `ContVars' [pw = national_wgt] if agemos<6
+margins int_month
+pwcompare int_month, effects sort mcompare(sidak)
+
+
+// ------------------------------------------------------------------------------
+//              |                              Sidak                Sidak
+//              |   Contrast   Std. err.      z    P>|z|     [95% conf. interval]
+// -------------+----------------------------------------------------------------
+* mixed_milk 	- No
+* milk 			- Yes  
+// Dec vs Mar  |   .2690234   .0793058     3.39   0.045     .0024839    .5355629
+// Jul vs Mar  |    .304376   .0798837     3.81   0.009     .0358943    .5728577
+* juice 		- Yes 
+// May vs Jan  |   .5424226   .1601235     3.39   0.045     .0042625    1.080583
+* other_liq 	- Yes  
+//  Oct vs May  |  -.768407   .2208824    -3.48   0.033    -1.510773    -.026042
+* formula 		- No
+* broth			- No
+* Bottle 		- Yes 
+//  Jul vs Jan  |   .330760   .0974981     3.39   0.045     .0030784    .6584425
+
+local depvar01 mixed_milk milk juice other_liq formula broth bottle cont_bf 
+	
+* Variables that represent data from date of data collection
+local ContVars i.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
+foreach var in `depvar01' {
+	di `depvar01'
+		
+	logit `var' `ContVars' [pw = national_wgt] if agemos<6
+	margins int_month
+	marginsplot, title(`var' by month of data collection) ytitle("Proportion") 
+	graph export `var'.tif, as(tif) replace
+
+	putdocx paragraph, halign(center)
+	putdocx image "`var'.tif"
+}
+local ExportPath "C:/TEMP/Seasonality"
+local FileName "IYCF Seasonality.docx"
+putdocx save "`ExportPath'/`FileName'", append
+
+putdocx begin, font("Calibri") 
+
