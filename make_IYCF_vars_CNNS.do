@@ -11,14 +11,12 @@ version 16
 include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
 // include "dnyaneshwar_paths.do"
 
+use "CNNS_04_regional_wgts", clear
+rename caseid case_id
+save C:\Temp\Data\reg_wgt_temp, replace
+
 * Open CNNS
 use `CNNS', clear
-
-* Tasks
-* Add regional weights
-
-
-
 
 * * * 
 *DROP ALL PREVIOUSLY CONSTRUCTED IYCF VARS
@@ -744,7 +742,7 @@ la def inst_birth 1 public 2 private 3 home 4 "other-missing"
 la val inst_birth inst_birth
 la var inst_birth "Institutional Birth"
 tab q637 inst_birth, m 
-tab 
+
 
 * Birth order
 la list q106
@@ -946,10 +944,13 @@ tab state state_cnns, m
 * Survey Weights
 gen national_wgt =iw_s_pool   
 
-* Regional weights not added
-// merge 1:1 case_id using "C:\Temp\Data\CNNS_04_regional_weights.dta"
-// gen regional_wgt = reg_weight_survey
-// gen regional_bio_wgt = reg_weight_bio
+* Regional weights to add
+merge 1:1 case_id using C:\Temp\Data\reg_wgt_temp
+gen regional_wgt = reg_weight_survey
+gen regional_bio_wgt = reg_weight_bio
+
+* 852 cases of data collection not completed
+* reg_weight_survey reg_weight_bio
 
 gen state_wgt =iweight_s   
 
@@ -971,7 +972,7 @@ keep psu hh_num one int_date birthday birthmonth birthyear dateofbirth age_days 
 	freq_formula freq_yogurt milk_feeds feeds mmf_nobf min_milk_freq_nbf ///
 	mmf_all mixed_milk mad_all egg_meat zero_fv sugar_bev unhealthy_food ///
 	lbw cat_birth_wt anc4plus csection earlyanc mum_educ caste rururb wi wi_s state ///
-	sex national_wgt state_wgt round ebf_denom mum_work inst_birth bord 
+	sex national_wgt state_wgt round ebf_denom mum_work inst_birth bord regional_wgt regional_bio_wgt
 
 // 	regional_wgt regional_bio_wgt 
 
