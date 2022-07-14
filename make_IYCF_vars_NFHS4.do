@@ -854,7 +854,7 @@ tab bord
 * mother's work status*
 tab v714
 la list V714
-recode v714 (0=0)(1=1)(.=9),gen(mum_work)
+recode v714 (0=0)(1=1)(9 .=9),gen(mum_work)
 * use label from NFHS-5
 la var mum_work "Mother working"
 tab v714 mum_work, m 
