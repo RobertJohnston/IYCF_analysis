@@ -1064,8 +1064,8 @@ tab bord
 * mother's work status*
 tab v714
 la list V714
-recode v714 (0=0)(1=1)(.=9),gen(mum_work)
-la def yesnomissing 0 No 1 Yes 9 Missing
+recode v714 (0=0)(1=1)(.=.),gen(mum_work)
+la def yesnomissing 0 No 1 Yes 
 la val mum_work yesnomissing
 la var mum_work "Mother working"
 tab v714 mum_work, m 
