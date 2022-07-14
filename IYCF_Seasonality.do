@@ -58,6 +58,7 @@ tab round if agemos<24, m
 sum agemos
 
 
+
 * for independent variables in analysis, we do not need to create dummies if we specify variable type in code
 * for categorical vars use "i."
 * for continuous vars use "c."
@@ -70,8 +71,10 @@ local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4
 	i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
 
 tab ebf round
-gen ebf_x = ebf*100
 tab ebf_denom round
+cap drop ebf_x
+gen ebf_x = ebf*100 if agemos<6
+tab agemos ebf_x 
 
 version 16: table round [pw = national_wgt] if ebf_denom==1, c(mean ebf_x n ebf_x) format(%9.1f)
 version 16: table round [pw = national_wgt] , c(mean ebf_x n ebf_x) format(%9.1f)
@@ -370,11 +373,16 @@ gen ebf_x = ebf*100 if agemos <6
 tab agemos ebf_x 
 tab round ebf_x
 
+
+
 * Plot adjusted vs unadjusted estimates onto one graph
-* Here we use the mean month of data collection for comparison - not perfect for comparison.  That is the point that we are demonstrating. 
+
+
+* EBF
+* Survey estimates based on one month shared by all surveys
 
 * No controls are applied for month of data collection 
-logit ebf_x i.round [pw = national_wgt] 
+logit ebf_x i.round  [pw = national_wgt] 
 margins round, saving(file1, replace)
 
 * Adjustments are applied using control variables for month of data collection 
@@ -384,27 +392,41 @@ local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 
 logit ebf_x `ContVars' [pw = national_wgt] 
 * output by round of survey
-margins round, saving(file2, replace)
+margins round,  saving(file2, replace)
 
-combomarginsplot file1 file2, labels( "Unadjusted" "Adjusted" ) ///
-	file1opts(pstyle(p1)) file2opts(pstyle(p2)) lplot1(mfcolor(white)) ///
-	title("Exclusive breastfeeding by survey") ytitle("Proportion") ///
-	legend(pos(6) ring(0) col(2) region(lstyle(none))) offset
-graph export ebf_adj_unadj.tif, as(tif) replace
+margins round, at(int_month==3) saving(file3, replace)
+
+preserve
+use file1, clear
+replace _at =1
+append using file2  
+replace _at =2 in 6/10
+append using file3  
+replace _at =3 in 11/15
+save ebf_round, replace 
+
+replace _m1 = _m1-0.05 if _at==1
+replace _m1 = _m1+0.05 if _at==3
+
+twoway (scatter _margin _m1 if _at==1 , msymbol(D) ) ///
+       (rcap _ci_ub _ci_lb _m1 if _at==1) (line _margin _m1 if _at==1) ///
+	   (scatter _margin _m1 if _at==2 , msymbol(Oh) ) ///
+       (rcap _ci_ub _ci_lb _m1 if _at==2) (line _margin _m1 if _at==2) ///
+	   (scatter _margin _m1 if _at==3 , msymbol(Th) ) ///
+       (rcap _ci_ub _ci_lb _m1 if _at==3) (line _margin _m1 if _at==3) ///
+	    , ///
+	   title("Exclusive Breastfeeding") ///
+	   xlabel(1(1)5, valuelabel ) xtitle(" ") ylabel(0.4(0.1)0.7) ///
+	   ytitle(Proportion) legend(pos(5) ring(0) col(1)  region(lstyle(none)) ///
+	   order(1 "Unadjusted - Midpoint" 4 "Adjusted - Midpoint" 7 "Adjusted - March")) scheme(s1mono) ///
+	   graphregion(color(white)) bgcolor(white) 
+graph export ebf_unadj_adj_mar.tif, as(tif) replace
+
+restore
 
 
-* Add combomarginsplot to word file
-putdocx begin, font("Calibri") 
-putdocx pagebreak
-putdocx paragraph, halign(left)
-putdocx image ebf_adj_unadj.tif, linebreak(1)
-
-putdocx save "`ExportPath'/`FileName'", append
-
-
-
-
-
+* WATER
+* Survey estimates based on one month shared by all surveys
 
 * Giving Water by Round
 * selection of correct denominators
@@ -412,33 +434,81 @@ cap drop water_x
 gen water_x = water*100 if agemos <6
 tab agemos water_x 
 
-logit water_x i.round [pw = national_wgt] 
-* here no controls are applied for month of data collection 
+* No adjustment 
+logit water_x i.round  [pw = national_wgt] 
 margins round, saving(file1, replace)
-* output by round of survey
 
+* Adjustments are applied using control variables for month of data collection 
 local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
 logit water_x `ContVars' [pw = national_wgt] 
+* Adjustment by midpoint of survey
+margins round,  saving(file2, replace)
+* Adjustment by month March
+margins round, at(int_month==3) saving(file3, replace)
 
-margins round, saving(file2, replace)
+preserve
+use file1, clear
+replace _at =1
+append using file2  
+replace _at =2 in 6/10
+append using file3  
+replace _at =3 in 11/15
+save h20_round, replace 
 
-combomarginsplot file1 file2, labels( "Unadjusted" "Adjusted" ) ///
-	file1opts(pstyle(p1)) file2opts(pstyle(p2)) lplot1(mfcolor(white)) ///
-	title("Giving water by survey") ytitle("Proportion") ///
-	legend(pos(6) ring(0) col(2) region(lstyle(none))) offset
-graph export h20_adj_unadj.tif, as(tif) replace
+replace _m1 = _m1-0.05 if _at==1
+replace _m1 = _m1+0.05 if _at==3
+
+twoway (scatter _margin _m1 if _at==1 , msymbol(D) ) ///
+       (rcap _ci_ub _ci_lb _m1 if _at==1) (line _margin _m1 if _at==1) ///
+	   (scatter _margin _m1 if _at==2 , msymbol(Oh) ) ///
+       (rcap _ci_ub _ci_lb _m1 if _at==2) (line _margin _m1 if _at==2) ///
+	   (scatter _margin _m1 if _at==3 , msymbol(Th) ) ///
+       (rcap _ci_ub _ci_lb _m1 if _at==3) (line _margin _m1 if _at==3) ///
+	    , ///
+	   title("Giving Water") ///
+	   xlabel(1(1)5, valuelabel ) xtitle(" ") ylabel(0.1(0.1)0.5) ///
+	   ytitle(Proportion) legend(pos(5) ring(0) col(1)  region(lstyle(none)) ///
+	   order(1 "Unadjusted - Midpoint" 4 "Adjusted - Midpoint" 7 "Adjusted - March")) scheme(s1mono) ///
+	   graphregion(color(white)) bgcolor(white) 
+graph export water_unadj_adj_mar.tif, as(tif) replace
+
+restore
+
+
+*OLD 
+// * No controls are applied for month of data collection 
+// logit ebf_x i.round [pw = national_wgt] 
+// margins round, saving(file1, replace)
+//
+// * Adjustments are applied using control variables for month of data collection 
+// local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
+// 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+// 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+//
+// logit ebf_x `ContVars' [pw = national_wgt] 
+// * output by round of survey
+// margins round, saving(file2, replace)
+//
+// combomarginsplot file1 file2, labels( "Unadjusted" "Adjusted" ) ///
+// 	file1opts(pstyle(p1)) file2opts(pstyle(p2)) lplot1(mfcolor(white)) ///
+// 	title("Exclusive breastfeeding by survey") ytitle("Proportion") ///
+// 	legend(pos(6) ring(0) col(2) region(lstyle(none))) offset
+// graph export ebf_adj_unadj.tif, as(tif) replace
+
 
 * Add combomarginsplot to word file
 putdocx begin, font("Calibri") 
 putdocx pagebreak
 putdocx paragraph, halign(left)
-putdocx image h20_adj_unadj.tif, linebreak(1)
+putdocx image ebf_unadj_adj_mar.tif, linebreak(1)
+putdocx image water_unadj_adj_mar.tif, linebreak(1)
 
 putdocx save "`ExportPath'/`FileName'", append
 
-
+* attention to include all socio-economic vars i.wi i.mum_educ i.mum_work
 
 * Plot adjusted EBF estimates by month from pooled data in one graph
 local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
@@ -452,14 +522,11 @@ marginsplot, title("Exclusive breastfeeding by month of data collection") ///
 	name(month_ebf, replace)
 graph export ebf_month.tif, as(tif) replace
 
-* Add combomarginsplot to word file
 putdocx pagebreak
 putdocx paragraph, halign(left)
 putdocx image ebf_month.tif, linebreak(1)
 
 
-
-	
 * Plot adjusted WATER estimates by month from pooled data in one graph
 local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
@@ -680,6 +747,7 @@ putdocx paragraph, halign(left)
 putdocx image ebf_month.tif, linebreak(1)
 
 * Mother's Employment
+tab mum_work round, m 
 local ContVars ib12.int_month##i.mum_work  i.state i.rururb i.wi i.mum_educ   ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
@@ -735,10 +803,10 @@ forval x = 0/5 {
 }
 combomarginsplot file_0 file_1 file_2 file_3 file_4 file_5,  ///
 	labels( "0" "1" "2" "3" "4" "5") ///
-	file0opts(pstyle(p6) file1opts(pstyle(p1)) file2opts(pstyle(p2)) file3opts(pstyle(p3)) ///
-	file4opts(pstyle(p4)) file5opts(pstyle(p5)) plot1(mfcolor(white)) ///
+	 file1opts(pstyle(p1)) file2opts(pstyle(p2)) file3opts(pstyle(p3)) ///
+	file4opts(pstyle(p4)) file5opts(pstyle(p5)) file6opts(pstyle(p7)) plot1(mfcolor(white)) ///
 	title("Exclusive Breastfeeding by Age in Months") ///
-		ytitle("Proportion") ylab(0.3(.1)0.7) yscale(range(0.3 0.7)) ///
+		ytitle("Proportion") ylab(0.1(.1)0.8) yscale(range(0.1 0.8)) ///
 	legend(pos(7) ring(0) col(1) region(lstyle(none))) offset
 * Add combomarginsplot to word file
 putdocx pagebreak
@@ -876,4 +944,8 @@ local FileName "IYCF Seasonality.docx"
 putdocx save "`ExportPath'/`FileName'", append
 
 putdocx begin, font("Calibri") 
+
+
+
+
 
