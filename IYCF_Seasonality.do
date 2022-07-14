@@ -368,6 +368,7 @@ di "`ExportPath'/`FileName'"
 cap drop ebf_x
 gen ebf_x = ebf*100 if agemos <6
 tab agemos ebf_x 
+tab round ebf_x
 
 * Plot adjusted vs unadjusted estimates onto one graph
 * Here we use the mean month of data collection for comparison - not perfect for comparison.  That is the point that we are demonstrating. 
@@ -504,21 +505,31 @@ local FileName "IYCF Seasonality.docx"
 * Combomarginsplot - joining five graphs onto one background
 
 * Analysis of interaction between month and round
-* 	remove month and round from contvars
-local ContVars i.state i.rururb i.wi i.mum_educ i.mum_work  ///
+local ContVars ib12.int_month##i.round  i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days ///
 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari 
-	
+
+* Code below uses data available from dummy==x
 forval x = 1/5 {
-	logit ebf_x ib12.int_month##i.round `ContVars' [pw = national_wgt] if round==`x' 
+	logit ebf_x `ContVars' [pw = national_wgt] if round==`x' 
 	margins int_month#round, saving(ebf_round`x', replace)
 	local RoundValueLabel : value label round
 	local GraphLabel: label `RoundValueLabel' `x'
 	marginsplot, title("`GraphLabel'") ytitle("Proportion") name(file`x', replace) ///
 		ylab(0.2(.1)0.8) yscale(range(0.2 0.8))
 }
-graph combine file1 file2 file3 file4 file5, xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
-graph close file1 file2 file3 file4 file5
+
+* Code uses all entire regression estimation sample to calculate the margins, with the value of dummy temporarily reset to x in every observation.
+// logit ebf_x `ContVars' [pw = national_wgt] 
+// forval x = 1/5 {
+// 	margins int_month, at(round==`x') saving(ebf_round`x', replace)
+// 	local RoundValueLabel : value label round
+// 	local GraphLabel: label `RoundValueLabel' `x'
+// 	marginsplot, title("`GraphLabel'") ytitle("Proportion") name(file`x', replace) ///
+// 		ylab(0.2(.1)0.8) yscale(range(0.2 0.8))
+// }
+// graph combine file1 file2 file3 file4 file5, xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
+// graph close file1 file2 file3 file4 file5
 graph export "EBF by month by survey.png", width(6000) replace
 
 * Add EBF survey/month to word file
@@ -536,7 +547,8 @@ putdocx image "EBF by month by survey.png", linebreak(1)
 local ContVars i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days ///
 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari 
-	
+
+* this only uses the round data not pooled data for calculations
 forval x = 1/5 {
 	logit water_x ib12.int_month##i.round `ContVars' [pw = national_wgt] if round==`x' 
 	margins int_month#round, saving(h20_round`x', replace)
@@ -562,12 +574,178 @@ putdocx save "`ExportPath'/`FileName'", append
 * Use estimates that assume that all data was collected in April
 * see exported data in ebf_roundX
 * NFHS-5
-* start 6 2019
-* mid   5 2020
-* end   5 2021
+* start 6 2019, mid   5 2020, end   5 2021
 
 
 * FOR ANNEXES
+
+* REGION
+tab region round, m
+scatter regional_wgt round
+
+* Verify that ebf_x is for children under 6 months
+tab agemos ebf_x
+version 16: table region [pw = regional_wgt] , c(mean ebf_x n ebf_x) format(%9.1f)
+
+
+* Plot adjusted EBF estimates by month by region from pooled data in one graph
+* Region interaction with month of data collection
+// local ContVars ib12.int_month##i.region i.state i.rururb i.wi i.mum_educ i.mum_work  ///
+// 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+// 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
+// local ContVars ib12.int_month##i.region 
+
+* Here state is replaced with region in the ContVars
+* Graph below presents all regions on one graph overlapping (unreadable)
+// local ContVars ib12.int_month##i.region i.rururb i.wi i.mum_educ i.mum_work  ///
+// 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+// 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+//	
+// logit ebf_x `ContVars' [pw = regional_wgt] 
+// margins int_month#region, saving(file_1, replace)
+// marginsplot, title("Exclusive breastfeeding by month of data collection by region") ///
+// 		ytitle("Proportion") ylab(0(.1)0.8) yscale(range(0.0 0.8)) 
+
+		
+* Margins with region==`x'
+
+local ContVars ib12.int_month##i.region i.rururb i.wi i.mum_educ i.mum_work  ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
+logit ebf_x `ContVars' [pw = regional_wgt] 
+	
+forval x = 1/3 {
+	margins int_month, at(region==`x') saving(file_`x', replace)
+	marginsplot, title("Exclusive breastfeeding by month by region-"`x') ///
+		ytitle("Proportion") ylab(0(.1)0.8) yscale(range(0.0 0.8)) 
+	graph export ebf_region_`x'.tif, as(tif) replace
+}
+
+combomarginsplot file_1 file_2 file_3, labels( "North" "Central" "East" ) ///
+	file1opts(pstyle(p1)) file2opts(pstyle(p2)) file3opts(pstyle(p3)) ///
+	lplot1(mfcolor(white)) ///
+	title("Exclusive Breastfeeding by North, Central & East regions") ///
+		ytitle("Proportion") ylab(0(.1)0.8) yscale(range(0.0 0.8)) ///
+	legend(pos(6) ring(0) col(3) region(lstyle(none))) offset
+
+combomarginsplot file_4 file_5 file_6, labels( "NorthEast" "West" "South" ) ///
+	lplot1(mfcolor(white)) ///
+	title("Exclusive Breastfeeding by NorthEast, West & South regions")  ///
+	ytitle("Proportion") ylab(0(.1)0.8) yscale(range(0.0 0.8)) ///
+	legend(pos(6) ring(0) col(3) region(lstyle(none))) offset
+	
+* Add combomarginsplot to word file
+putdocx pagebreak
+putdocx paragraph, halign(left)
+putdocx image ebf_month.tif, linebreak(1)
+
+	
+// combomarginsplot file_4 file_5 file_6, labels( "NorthEast" "West" "South" ) ///
+// 	file4opts(pstyle(p1)) file5opts(pstyle(p2)) file6opts(pstyle(p3)) ///
+// 	lplot1(mfcolor(white)) ///
+// 	title("Exclusive breastfeeding by NorthEast, West &South regions")  ///
+// 	ytitle("Proportion") ylab(0(.1)0.8) yscale(range(0.0 0.8)) ///
+// 	legend(pos(6) ring(0) col(3) region(lstyle(none))) offset
+	
+* REGION
+	
+*Region 
+*region 1  North    Delhi(25), Haryana(12), HP(13), J&K(14), Punjab(28), Rajasthan(29), Uttarakhand(34) Chandigarh(6) Ladakh(37)			 							   
+*region 2  Central	Chhattisgarh(7), Madhya Pradesh(19), Uttar Pradesh(33)				
+*region 3  East		Bihar(5), West Bengal(35), Jharkhand(15), Odisha(26)	 							
+*region 4  NorthEast  Arunachal Pradesh(3), Sikkim(30), Tripura(32),  Meghalaya(22), Assam(4), Nagaland(24), Manipur(21), Mizoram(23)
+*region 5  West     Gujarat(11), Maharshtra (20), Goa(10), Dadra & Nagar Haveli (8), Daman and Diu (9) 
+*region 6  South    Andhra Pradesh(2),  Karnataka(16),  Kerala(17),  Tamil Nadu(31),  Telangana(36)  A&N islands (1) Puducherry (27) Lakshadweep (18)
+
+* RESIDENCE
+local ContVars ib12.int_month##i.rururb i.state i.wi i.mum_educ i.mum_work  ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
+logit ebf_x `ContVars' [pw = national_wgt] 
+	
+forval x = 1/2 {
+	margins int_month, at(rururb==`x') saving(file_`x', replace)
+}
+combomarginsplot file_1 file_2, labels( "Urban" "Rural" ) ///
+	file1opts(pstyle(p1)) file2opts(pstyle(p2)) plot1(mfcolor(white)) ///
+	title("Exclusive Breastfeeding by Rural/Urban Residence") ///
+		ytitle("Proportion") ylab(0(.1)0.8) yscale(range(0.0 0.8)) ///
+	legend(pos(6) ring(0) col(3) region(lstyle(none))) offset
+* Add combomarginsplot to word file
+putdocx pagebreak
+putdocx paragraph, halign(left)
+putdocx image ebf_month.tif, linebreak(1)
+
+* Mother's Employment
+local ContVars ib12.int_month##i.mum_work  i.state i.rururb i.wi i.mum_educ   ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
+logit ebf_x `ContVars' [pw = national_wgt] 
+	
+forval x = 0/1 {
+	margins int_month, at(mum_work==`x') saving(file_`x', replace)
+}
+combomarginsplot file_0 file_1, labels( "No" "Yes" ) ///
+	file1opts(pstyle(p1)) file2opts(pstyle(p2)) plot1(mfcolor(white)) ///
+	title("Exclusive Breastfeeding by Mother's Employment") ///
+		ytitle("Proportion") ylab(0(.1)0.8) yscale(range(0.0 0.8)) ///
+	legend(pos(6) ring(0) col(3) region(lstyle(none))) offset
+* Add combomarginsplot to word file
+putdocx pagebreak
+putdocx paragraph, halign(left)
+putdocx image ebf_month.tif, linebreak(1)
+
+* Socio-Economic Status
+local ContVars ib12.int_month##i.wi i.state i.rururb i.mum_educ i.mum_work  ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
+logit ebf_x `ContVars' [pw = national_wgt] 
+	
+forval x = 1/5 {
+	margins int_month, at(wi==`x') saving(file_`x', replace)
+}
+combomarginsplot file_1 file_2 file_3 file_4 file_5,  ///
+	labels( "Poorest" "Poorer" "Middle" "Richer" "Richest") ///
+	file1opts(pstyle(p1)) file2opts(pstyle(p2)) file3opts(pstyle(p3)) ///
+	file4opts(pstyle(p4)) file5opts(pstyle(p5)) plot1(mfcolor(white)) ///
+	title("Exclusive Breastfeeding by Socio-Economic Status") ///
+		ytitle("Proportion") ylab(0.3(.1)0.7) yscale(range(0.3 0.7)) ///
+	legend(pos(7) ring(0) col(1) region(lstyle(none))) offset
+* Add combomarginsplot to word file
+putdocx pagebreak
+putdocx paragraph, halign(left)
+putdocx image ebf_month.tif, linebreak(1)
+
+
+* AGE IN MONTHS
+* removed age in days from ContVars
+local ContVars ib12.int_month##i.agemos i.state i.rururb i.wi i.mum_educ i.mum_work  ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord      ///
+	i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
+logit ebf_x `ContVars' [pw = national_wgt] 
+	
+forval x = 0/5 {
+	margins int_month, at(agemos==`x') saving(file_`x', replace)
+}
+combomarginsplot file_0 file_1 file_2 file_3 file_4 file_5,  ///
+	labels( "0" "1" "2" "3" "4" "5") ///
+	file0opts(pstyle(p6) file1opts(pstyle(p1)) file2opts(pstyle(p2)) file3opts(pstyle(p3)) ///
+	file4opts(pstyle(p4)) file5opts(pstyle(p5)) plot1(mfcolor(white)) ///
+	title("Exclusive Breastfeeding by Age in Months") ///
+		ytitle("Proportion") ylab(0.3(.1)0.7) yscale(range(0.3 0.7)) ///
+	legend(pos(7) ring(0) col(1) region(lstyle(none))) offset
+* Add combomarginsplot to word file
+putdocx pagebreak
+putdocx paragraph, halign(left)
+putdocx image ebf_month.tif, linebreak(1)
+
+
 
 putdocx begin, font("Calibri") 
 
@@ -642,18 +820,7 @@ foreach var in `depvar01' {
 }
 putdocx save "`ExportPath'/`FileName'", append
 
-* Socio-Economic Status 
 
-* Exclusive Breastfeeding by Month by Socio-Economic Status - ALL SURVEY DATA (adjusted)
-* to aid interpretation - convert to SES terciles
-logit ebf ib12.int_month##i.wi i.state i.rururb i.mum_educ c.age_days c.age_days2 i.sex i.cat_birth_wt i.diar i.fever i.ari [pw = national_wgt] 
-margins int_month#wi,  saving(file1, replace)
-marginsplot, title("Exclusive breastfeeding by month of data collection & SES") 
-
-* Extra analysis
-* Analysis by region by month
-* Analysis by rural / urban by month
-* Analysis by wealth index by month
 
 * END
 
