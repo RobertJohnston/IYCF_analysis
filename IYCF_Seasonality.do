@@ -411,9 +411,9 @@ replace _m1 = _m1+0.05 if _at==3
 twoway (scatter _margin _m1 if _at==1 , msymbol(D) ) ///
        (rcap _ci_ub _ci_lb _m1 if _at==1) (line _margin _m1 if _at==1) ///
 	   (scatter _margin _m1 if _at==2 , msymbol(Oh) ) ///
-       (rcap _ci_ub _ci_lb _m1 if _at==2) (line _margin _m1 if _at==2) ///
+       (rcap _ci_ub _ci_lb _m1 if _at==2) (line _margin _m1 if _at==2, lpattern(longdash)) ///
 	   (scatter _margin _m1 if _at==3 , msymbol(Th) ) ///
-       (rcap _ci_ub _ci_lb _m1 if _at==3) (line _margin _m1 if _at==3) ///
+       (rcap _ci_ub _ci_lb _m1 if _at==3) (line _margin _m1 if _at==3, lpattern(shortdash)) ///
 	    , ///
 	   title("Exclusive Breastfeeding") ///
 	   xlabel(1(1)5, valuelabel ) xtitle(" ") ylabel(0.4(0.1)0.7) ///
@@ -464,9 +464,9 @@ replace _m1 = _m1+0.05 if _at==3
 twoway (scatter _margin _m1 if _at==1 , msymbol(D) ) ///
        (rcap _ci_ub _ci_lb _m1 if _at==1) (line _margin _m1 if _at==1) ///
 	   (scatter _margin _m1 if _at==2 , msymbol(Oh) ) ///
-       (rcap _ci_ub _ci_lb _m1 if _at==2) (line _margin _m1 if _at==2) ///
+       (rcap _ci_ub _ci_lb _m1 if _at==2) (line _margin _m1 if _at==2, lpattern(longdash)) ///
 	   (scatter _margin _m1 if _at==3 , msymbol(Th) ) ///
-       (rcap _ci_ub _ci_lb _m1 if _at==3) (line _margin _m1 if _at==3) ///
+       (rcap _ci_ub _ci_lb _m1 if _at==3) (line _margin _m1 if _at==3, lpattern(shortdash)) ///
 	    , ///
 	   title("Giving Water") ///
 	   xlabel(1(1)5, valuelabel ) xtitle(" ") ylabel(0.1(0.1)0.5) ///
@@ -477,6 +477,10 @@ graph export water_unadj_adj_mar.tif, as(tif) replace
 
 restore
 
+* Merge graphs together
+graph combine ebf_unadj_adj_mar water_unadj_adj_mar , xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
+graph close ebf_unadj_adj_mar water_unadj_adj_mar 
+graph export "EBF and giving water unadjusted, adjusted and set to March as month of data collection.png", width(6000) replace
 
 *OLD 
 // * No controls are applied for month of data collection 
@@ -556,9 +560,6 @@ putdocx begin, font("Calibri")
 putdocx pagebreak
 putdocx paragraph, halign(left)
 putdocx image "Feeding variables by month of data collection.png", linebreak(1)
-
-
-
 
 putdocx save "`ExportPath'/`FileName'", append
 
@@ -892,7 +893,8 @@ putdocx save "`ExportPath'/`FileName'", append
 
 * END
 
-
+* dependent variables
+* ebf_x water_x mixed_milk milk juice other_liq formula broth bottle
 
 * Variables that represent data from date of data collection
 local ContVars i.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
@@ -908,18 +910,44 @@ pwcompare int_month, effects sort mcompare(sidak)
 //              |                              Sidak                Sidak
 //              |   Contrast   Std. err.      z    P>|z|     [95% conf. interval]
 // -------------+----------------------------------------------------------------
+* ebf 			
+ Feb vs Jan  |  -.0888641   .0456016    -1.95   0.969    -.2421268    .0643986
+ Mar vs Jan  |  -.2018539   .0487748    -4.14   0.002    -.3657815   -.0379263
+ Apr vs Jan  |  -.6187814   .0567247   -10.91   0.000    -.8094278   -.4281349
+ May vs Jan  |   -.898198   .0652538   -13.76   0.000     -1.11751   -.6788861
+ Jun vs Jan  |  -.9199704   .0646985   -14.22   0.000    -1.137416   -.7025246
+ Jul vs Jan  |  -.8173911   .0648307   -12.61   0.000    -1.035281   -.5995013
+ Aug vs Jan  |  -.6198681   .0780346    -7.94   0.000    -.8821353   -.3576009
+ Sep vs Jan  |  -.6104374   .0742461    -8.22   0.000    -.8599717   -.3609031
+ Oct vs Jan  |  -.4944614   .0857995    -5.76   0.000    -.7828257    -.206097
+ Nov vs Jan  |  -.4373159   .0954717    -4.58   0.000    -.7581875   -.1164444
+ Dec vs Jan  |  -.2706061     .06268    -4.32   0.001    -.4812676   -.0599445
+* water 	
+ Feb vs Jan  |   .1069185   .0524809     2.04   0.940    -.0694651    .2833021
+ Mar vs Jan  |   .3723018   .0550947     6.76   0.000     .1871337    .5574699
+ Apr vs Jan  |   .8731455   .0618512    14.12   0.000     .6652694    1.081022
+ May vs Jan  |   1.269315    .069188    18.35   0.000      1.03678    1.501849
+ Jun vs Jan  |   1.276918    .069395    18.40   0.000     1.043688    1.510148
+ Jul vs Jan  |   1.141542   .0693083    16.47   0.000     .9086033    1.374481
+ Aug vs Jan  |    .860796   .0834211    10.32   0.000     .5804254    1.141167
+ Sep vs Jan  |   .8467247   .0803237    10.54   0.000     .5767641    1.116685
+ Oct vs Jan  |   .7037217   .0932105     7.55   0.000       .39045    1.016993
+ Nov vs Jan  |   .5335744   .1060221     5.03   0.000      .177244    .8899047
+ Dec vs Jan  |   .2824641   .0697743     4.05   0.003     .0479591    .5169692
 * mixed_milk 	- No
 * milk 			- Yes  
-// Dec vs Mar  |   .2690234   .0793058     3.39   0.045     .0024839    .5355629
-// Jul vs Mar  |    .304376   .0798837     3.81   0.009     .0358943    .5728577
+Dec vs Mar  |   .2690234   .0793058     3.39   0.045     .0024839    .5355629
+Jul vs Mar  |    .304376   .0798837     3.81   0.009     .0358943    .5728577
 * juice 		- Yes 
-// May vs Jan  |   .5424226   .1601235     3.39   0.045     .0042625    1.080583
+May vs Jan  |   .5424226   .1601235     3.39   0.045     .0042625    1.080583
 * other_liq 	- Yes  
-//  Oct vs May  |  -.768407   .2208824    -3.48   0.033    -1.510773    -.026042
+ Dec vs Sep  |   .5769729   .1638516     3.52   0.028      .026283    1.127663
+ Dec vs Oct  |   .8795346    .201338     4.37   0.001     .2028564    1.556213
+ Dec vs Nov  |   .6881156   .1949298     3.53   0.027     .0329746    1.343257
 * formula 		- No
 * broth			- No
 * Bottle 		- Yes 
-//  Jul vs Jan  |   .330760   .0974981     3.39   0.045     .0030784    .6584425
+ Jul vs Jan  |   .330760   .0974981     3.39   0.045     .0030784    .6584425
 
 local depvar01 mixed_milk milk juice other_liq formula broth bottle cont_bf 
 	
