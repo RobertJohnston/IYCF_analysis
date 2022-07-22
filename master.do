@@ -140,6 +140,16 @@ replace bottle = 0 if _n == 51556
 * add broth to NFHS-3
 replace broth = 0 if _n == 1
 
+recode bord (5/20=5)
+la def bord 5 "5+"
+la val bord bord
+
+* introduction of complementary foods
+tab agemos any_solid_semi_food
+// 2.1. Introduction of solid, semi-solid or soft foods 6–8 months (ISSSF) 
+tab agemos isssf
+
+
 save "C:\Temp\Data\iycf_5surveys.dta", replace
 
 
@@ -362,9 +372,6 @@ tab juice round,m
 tab broth round, col
 tab broth round,m
 
-
-
-
 tab milk round, col
 tab milk round,m 
 
@@ -374,12 +381,32 @@ tab formula round,m
 tab other_liq round, col
 tab other_liq round,m
 
+
+tab mixed_milk round, col
+tab mixed_milk round,m
+* Mixed milk feeding 0-5M
+* Mixed milk feeding (<6 months): Percentage of infants 0–5 months of age who 
+* were fed formula and/or animal milk in addition to breast milk during the previous day
+* formerly predominant breastfeeding - misnomer
+
+
+
+
+foreach var of varlist v409- v414u {
+ do 
+}
+
+
+
+
 * Food variables
 tab yogurt round, col 
 tab yogurt round,m 
+graph bar (mean) yogurt, over(int_month)
 
 tab fortified_food round, col 
 tab fortified_food round,m 
+graph bar (mean) fortified_food, over(int_month)
 
 tab bread round, col
 tab bread round,m 
@@ -425,12 +452,7 @@ tab leg_nut round,m
 tab dairy round, col 	 
 tab dairy round,m 
 
-tab mixed_milk round, col
-tab mixed_milk round,m
-* Mixed milk feeding 0-5M
-* Mixed milk feeding (<6 months): Percentage of infants 0–5 months of age who 
-* were fed formula and/or animal milk in addition to breast milk during the previous day
-* formerly predominant breastfeeding - misnomer
+
 
 tab all_meat round, col 
 tab all_meat round,m 
@@ -446,11 +468,22 @@ tab fruit_veg round,m
 
 
 * Composite diet variables
+
+* Food variables
+tab isssf round, col 
+tab isssf round,m 
+graph bar (mean) isssf, over(int_month)
+
 tab sumfoodgrp round, col
 tab sumfoodgrp round,m
 
 tab mdd round, col
 tab mdd round,m
+
+la list mmf
+replace mmf_bf = 1 if mmf_bf==2
+la drop mmf
+la val mmf_bf no_yes
 
 tab mmf_bf round, col	 
 tab mmf_bf round,m
@@ -465,6 +498,7 @@ tab mmf_all round,m
 tab mad_all round, col
 tab mad_all round,m
 * Minimum Acceptable Diet (MAD) in NFHS-3 is only for BF children
+* % of non BF children in NFHS-3 = 16%
 * cannot calculate for all children as do not have frequency of milk feeds in non_BF children
 
 tab egg_meat round, col
@@ -502,9 +536,8 @@ tab csection round,m
 tab bord round, col 
 tab bord round,m
 
-
-tab inst_birth round, m
 tab inst_birth round, col
+tab inst_birth round, m
 
 tab mum_work round, col 
 tab mum_work round,m
@@ -521,15 +554,8 @@ tab rururb round,m
 tab wi round, col
 tab wi round,m
 
-* to update
-log close 
-end
 
-tab birth_place round, col
-tab birth_place round,m
 
-tab inst_birth round, col
-tab inst_birth round,m
 
 tab anc_BFcounsel round, col
 tab anc_BFcounsel round,m
@@ -540,6 +566,9 @@ tab pnc_child_visit round,m
 tab pnc_assistance round, col
 tab pnc_assistance round,m
 
+* to update
+log close 
+end
 
 
 
