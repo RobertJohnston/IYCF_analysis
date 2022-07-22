@@ -482,22 +482,18 @@ egen any_solid_semi_food = rowtotal (carb leg_nut dairy all_meat egg vita_fruit_
 replace any_solid_semi_food = 1 if any_solid_semi_food >1
 tab any_solid_semi_food, m 	   
 
-	   
 *Introduction to the semi_solid, solid, soft_food in children from 6-8 months of age
-* based on 
-* v414s: gave child solid, semi solid, soft foods yesterday 
-tab v414s any_solid_semi_food, m 
-
+* Error - see WHO Guidance. New indicator not based on v414s: gave child solid, semi solid, soft foods yesterday 
 cap drop intro_compfood
-gen intro_compfood = 0
-replace intro_compfood =. if v414s == 9
-replace intro_compfood = 1 if v414s == 1 | any_solid_semi_food>=1 
-replace intro_compfood =. if age_days<=183 | age_days>=243
-la var intro_compfood "Intro to complementary food 6-8 months of age"
-tab intro_compfood
-tab intro_compfood any_solid_semi_food
+cap drop isssf
+gen isssf = 0
+replace isssf = . if any_solid_semi_food == .
+replace isssf = 1 if  any_solid_semi_food==1 
+replace isssf = . if age_days<=183 | age_days>=273
+*Corrected error in age range
+la var isssf "Intro to semi_solid, solid, soft_food 6-8 months of age"
+tab any_solid_semi_food isssf, m
 
-//--------------------------------------------------------------------------------------------------------
 *EXCLUSIVE BREASTFEEDING
 *Exclusive breastfeeding is defined as breastfeeding with no other food or drink, not even water.
 *Using the WHO guideline for defining ebf variable - create a condition variable based on 
@@ -629,16 +625,12 @@ tab qual_freq_solids
 *Minimum Meal Frequency (MMF) Breastfeeding
 gen mmf_bf=0
 replace mmf_bf=1 if freq_solids>=2 & currently_bf==1 & age_days>183 & age_days<243 
-replace mmf_bf=2 if freq_solids>=3 & currently_bf==1 & age_days>=243 & age_days<730 
+replace mmf_bf=1 if freq_solids>=3 & currently_bf==1 & age_days>=243 & age_days<730 
 replace mmf_bf=. if currently_bf!=1
 replace mmf_bf =. if age_days<=183 | age_days>=730
+la val mmf_bf no_yes
+tab mmf_bf, m 
 
-// la def mmf  0 "Inadequate MMF" 1 "Adequate freq(2) & BF 6-8M" 2 "Adequate freq(3) and BF 6-8M"
-la def mmf  0 "Inadequate MMF" 1 "Adequate freq(2) & BF 6-8M" 2 "Adequate freq(3) and BF 9-23M"
-la val mmf mmf
-tab mmf
-
-tab mmf_bf,m
 
 
 *For currently non-breastfed children: MMF is met if children 6-23 months of age receive solid, semi-solid or soft foods or milk feeds at least 4 
@@ -1069,7 +1061,7 @@ keep psu hh_num one int_date birthday birthmonth birthyear dateofbirth age_days 
 	potato leafy_green any_solid_semi_food vita_fruit fruit_veg organ meat ///
 	egg fish cont_bf semisolid carb leg_nut dairy all_meat vita_fruit_veg ///
 	agegroup sumfoodgrp diar fever ari cont_bf cont_bf_12_23 ///
-	intro_compfood mdd currently_bf freq_solids mmf_bf freq_milk ///
+	isssf mdd currently_bf freq_solids mmf_bf freq_milk ///
 	freq_formula freq_yogurt milk_feeds feeds mmf_nobf min_milk_freq_nbf ///
 	mmf_all mixed_milk mad_all egg_meat zero_fv sugar_bev unhealthy_food ///
 	lbw cat_birth_wt anc4plus csection earlyanc mum_educ caste rururb wi wi_s state ///

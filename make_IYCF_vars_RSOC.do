@@ -522,7 +522,7 @@ replace any_solid_semi_food = 1 if q199_1 >0 & q199_1 <22 // frequency of feedin
 tab any_solid_semi_food, m 
 cap drop any_solid_semi_food_x
 gen any_solid_semi_food_x = any_solid_semi_food*100
-graph bar (mean) any_solid_semi_food_x if agemos<24, over(agemos)
+// graph bar (mean) any_solid_semi_food_x if agemos<24, over(agemos)
 cap drop any_solid_semi_food_x
 
 *Introduction to the semi_solid, solid, soft_food in children from 6-8 months of age
@@ -543,19 +543,19 @@ tab q198 		  // Did child eat any semi-solid in past 24 hours
 tab q199_1        // How many times did child eat  semi-solid in past 24 hours
 tab q199_1 q198
 
-// Official WHO definition
-// Introduction of solid, semi-solid or soft foods: Proportion of infants 6–8 months of age
-// who receive solid, semi-solid or soft foods
-
+*Introduction to the semi_solid, solid, soft_food in children from 6-8 months of age
+* Error - see WHO Guidance. New indicator not based on v414s: gave child solid, semi solid, soft foods yesterday 
 cap drop intro_compfood
-gen intro_compfood = 0
-replace intro_compfood = 1 if any_solid_semi_food>=1 
+cap drop isssf
+gen isssf = 0
+replace isssf = . if any_solid_semi_food == .
+replace isssf = 1 if  any_solid_semi_food>=1 
+replace isssf = . if age_days<=183 | age_days>=273
+*Corrected error in age range
+la var isssf "Intro to semi_solid, solid, soft_food 6-8 months of age"
 tab  q199_1 intro_compfood, m 
 
-replace intro_compfood =. if age_days<=183 | age_days>=243
-la var intro_compfood "Intro to complementary food 6-8 months of age"
-tab intro_compfood
-// this indicator is always 6-8 m 
+
 
 *EXCLUSIVE BREASTFEEDING
 *Exclusive breastfeeding is defined as breastfeeding with no other food or drink, not even water.
@@ -673,16 +673,13 @@ la val qual_freq_solids freq_solids
 tab qual_freq_solids,m
 tab qual_freq_solids
 
-
-
-*Minimum Meal Frequency (MMF) Breastfeeding
+*Minimum Meal Frequency (MMF) for Breastfeeding Children
 gen mmf_bf=0
 replace mmf_bf=1 if freq_solids>=2 & currently_bf==1 & age_days>183 & age_days<243 
-replace mmf_bf=2 if freq_solids>=3 & currently_bf==1 & age_days>=243 & age_days<730 
-replace mmf =. if age_days<=183 | age_days>=730
-la def mmf  0 "Inadequate MMF" 1 "Adequate freq(2) and BF 6-8M" 2 "Adequate freq(3) and BF 9-23M"
-la val mmf mmf
-tab mmf, m 
+replace mmf_bf=1 if freq_solids>=3 & currently_bf==1 & age_days>=243 & age_days<730 
+replace mmf_bf =. if age_days<=183 | age_days>=730
+la val mmf_bf no_yes
+tab mmf_bf, m 
 
 *For currently non-breastfed children: MMF is met if children 6-23 months of age receive solid, semi-solid or soft foods or milk feeds at least 4 times during the previous day and at least one of the feeds is a solid, semi-solid or soft feed*******
 * Variable fed_milk refers to number of times a child received milk other than breastmilk i.e. other animal milk*
@@ -705,8 +702,8 @@ tab milk_feeds, m
 * combines number of times fed milk, buttermilk, infant formula and yogurt. Please ensure there are no missings(.) 
 * all missings have been set to 0 to allow summation across row. 
 
-// make sure to not double count yogurt
-// it is included in solids
+* Do not double count yogurt
+* it is included in solids
 
 
 * OVERALL FREQUENCY FEEDS
@@ -718,7 +715,7 @@ la def feeds 7 "7+ feeds"
 la val feeds feeds
 la var feeds  "Frequency of solid, semi-solid, all milk feeds"
 tab feeds, m 	
-* please ensure there are no missings(.) and all missings have been set to 0 in the age group to allow summation across row. 
+* Ensure there are no missings(.) and all missings have been set to 0 in the age group to allow summation across row. 
 * STATA will mark feeds as missings if any of them are missing.
 
 *Minimum Meal Frequency (MMF) NON Breastfeeding
@@ -740,17 +737,14 @@ replace min_milk_freq_nbf =1 if milk_feeds >=2 & currently_bf!=1
 *replace min_milk_freq_nbf =1 if yogurt_freq >=2 & currently_bf!=1 
 **********************************
 
-
-
 replace min_milk_freq_nbf =. if age_days<=183 | age_days>=730
 la var min_milk_freq_nbf "Minimum Milk Frequency for Non-Breastfed Child"
 tab min_milk_freq_nbf, m 
 // graph bar (mean) min_milk_freq_nbf currently_bf if agemos < 24, over(agemos) 
 
-
 *MMF among all children 6-23 months
 gen mmf_all=0
-replace mmf_all=1 if mmf_bf==1 | mmf_bf==2 | mmf_nobf==1
+replace mmf_all=1 if mmf_bf==1 | mmf_nobf==1
 replace mmf_all =. if age_days<=183 | age_days>=730
 la var mmf_all "Minimum meal frequency for all children 6-23M"
 tab mmf_all, m 
@@ -773,7 +767,6 @@ replace mixed_milk=1 if (currently_bf==1 & formula==1)
 replace mixed_milk=1 if (currently_bf==1 & other_milk==1)
 replace mixed_milk =. if age_days<0 | age_days>=183 
 tab mixed_milk, m 
-
 
 tab mdd
 tab mmf_all

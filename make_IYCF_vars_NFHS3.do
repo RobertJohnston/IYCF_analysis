@@ -490,15 +490,16 @@ graph bar (mean) any_solid_semi_food_x if agemos<24, over(agemos)
 cap drop any_solid_semi_food_x
 
 *Introduction to the semi_solid, solid, soft_food in children from 6-8 months of age
-* based on v414s: gave child solid, semi solid, soft foods yesterday 
-
+* Error - see WHO Guidance. New indicator not based on v414s: gave child solid, semi solid, soft foods yesterday 
 cap drop intro_compfood
-gen intro_compfood = 0
-replace intro_compfood = . if v414s == 9
-replace intro_compfood = 1 if v414s == 1    | any_solid_semi_food==1 
-replace intro_compfood = . if age_days<=183 | age_days>=243
-la var intro_compfood "Intro to complementary food 6-8 months of age"
-tab intro_compfood
+cap drop isssf
+gen isssf = 0
+replace isssf = . if any_solid_semi_food == .
+replace isssf = 1 if  any_solid_semi_food==1 
+replace isssf = . if age_days<=183 | age_days>=273
+*Corrected error in age range
+la var isssf "Intro to semi_solid, solid, soft_food 6-8 months of age"
+tab isssf, m
 
 *EXCLUSIVE BREASTFEEDING
 *Exclusive breastfeeding is defined as breastfeeding with no other food or drink, not even water.
@@ -622,28 +623,20 @@ la def qual_freq_solids 0 "from 0 to 7x", add
 la def qual_freq_solids 8 "don't know", add
 la def qual_freq_solids 9 missing, add
 la def qual_freq_solids 99 "missing freq & yes semi-solids", add
+la var qual_freq_solids "Quality of freq solids indicator"
 la val freq_solids qual_freq_solids
 tab qual_freq_solids,m
 tab qual_freq_solids
 
 
-
 *Minimum Meal Frequency (MMF) Breastfeeding
 gen mmf_bf=0
 replace mmf_bf=1 if freq_solids>=2 & currently_bf==1 & age_days>183 & age_days<243 
-replace mmf_bf=2 if freq_solids>=3 & currently_bf==1 & age_days>=243 & age_days<730 
+replace mmf_bf=1 if freq_solids>=3 & currently_bf==1 & age_days>=243 & age_days<730 
 replace mmf_bf=. if currently_bf!=1
 replace mmf_bf =. if age_days<=183 | age_days>=730
-tab mmf_bf, m
-
-
-// la def mmf  0 "Inadequate MMF" 1 "Adequate freq(2) & BF 6-8M" 2 "Adequate freq(3) and BF 6-8M"
-la def mmf  0 "Inadequate MMF" 1 "Adequate freq(2) & BF 6-8M" 2 "Adequate freq(3) and BF 9-23M"
-la val mmf mmf
-tab mmf
-
-
-
+la val mmf_bf no_yes
+tab mmf_bf, m 
 
 *For currently non-breastfed children: MMF is met if children 6-23 months of age receive solid, semi-solid or soft foods or milk feeds at least 4 
 * times during the previous day and at least one of the feeds is a solid, semi-solid or soft feed
@@ -651,30 +644,28 @@ tab mmf
 * Variable freq_formula refers to number of times a child received infant formula*
 * Variable freq_yogurt refers to number of times a child received yogurt*
 
+*Minimum Meal Frequency (MMF) NON Breastfeeding
 * PLEASE NOTE
 * As Frequency of Milk feeds is not in NFHS 3 DATA, WE ARE UNABLE TO CREATE THE MMF for Non_BF CHILDREN  VARIABLE
 * Yogurt is not double counted 
-
 * Generates the total number of times a non-breastfed child received solid, semi-solid or soft foods or milk feeds*
+gen mmf_nobf=.
 
-
-*MMF among all children 6-23 months    //for NFHS 3 we can only consider MMF for BF children, so this var is only for BF children
-gen mmf_all_bf=0
-replace mmf_all_bf=1 if mmf_bf==1 | mmf_bf==2  
-replace mmf_all_bf =. if currently_bf!=1                    
-replace mmf_all_bf =. if age_days<=183 | age_days>=730
-la var mmf_all_bf "Minimum meal frequency for all children 6-23M"
-tab mmf_all_bf, m 
-
+*MMF FOR ALL children 6-23 months    //for NFHS 3 we can only consider MMF for BF children, so this var is only for BF children
+gen mmf=.
+// replace mmf_bf=1 if mmf_bf==1 | mmf_bf==2  
+// replace mmf_bf =. if currently_bf!=1                    
+// replace mmf_bf =. if age_days<=183 | age_days>=730
+la var mmf "Minimum meal frequency for all children 6-23M"
+tab mmf, m 
 
 **Minimum Acceptable Diet (MAD) for BF children
 **** MAD among all BF infants 6-23 months of age ****	
-gen mad_all_bf=0
-replace mad_all_bf=1 if (mdd==1 & mmf_all_bf==1) & currently_bf==1 
-replace mmf_all_bf =. if currently_bf!=1  
-replace mad_all_bf=. if age_days<=183 | age_days>=730 
-tab mad_all_bf, m 
-
+gen mad_bf=0
+replace mad_bf=1 if (mdd==1 & mmf_bf==1) & currently_bf==1 
+replace mmf_bf =. if currently_bf!=1  
+replace mad_bf=. if age_days<=183 | age_days>=730 
+tab mad_bf, m 
 
 *Egg and/or Flesh food consumption - % of children 6-23months of age who consumed egg and/or flesh food during the previous day*
 gen egg_meat=0
@@ -682,13 +673,11 @@ replace egg_meat=1 if all_meat ==1 | egg==1            //& agemons>=6 & agemons<
 replace egg_meat =. if age_days<=183 | age_days>=730
 tab egg_meat, m 
 
-
 *Zero fruit or veg consumption - % of children 6-23months of age who did not consume any fruits or vegetables during the previous day**
 gen zero_fv=0
 replace zero_fv =1 if vita_fruit_veg==0  & fruit_veg ==0
 replace zero_fv =. if age_days<=183 | age_days>=730
 tab zero_fv, m 
-
 
 * Mixed milk feeding 0-5M
 * Mixed milk feeding (<6 months): Percentage of infants 0–5 months of age who 
@@ -699,6 +688,15 @@ replace mixed_milk=1 if (currently_bf==1 & formula==1)
 cap replace mixed_milk=1 if (currently_bf==1 & other_milk==1)
 replace mixed_milk =. if age_days<0 | age_days>=183 
 tab mixed_milk, m 
+
+// Notes
+// • Mixed milk feeding includes any formula (e.g. infant formula, follow-on formula, "toddler
+// milk") or any liquid animal milk other than human breast milk, (e.g. cow's milk, goat's milk,
+// evaporated milk or reconstituted powdered milk).
+// • Breastfeeding by a wet nurse, feeding of expressed breast milk and feeding of donor
+// human milk all count as being fed breast milk.
+// • Yogurt, whether liquid or solid, is not counted here because it is not generally given as a
+// substitute for breast milk.
 
 *Unhealthy food consumption
 *consumption of sugar sweetened beverages by child agemons 6 to 23
@@ -765,7 +763,7 @@ replace anc4plus = 1 if m14 >=4 & m14 <=30
 replace anc4plus =. if age_days>=730
 tab m14 anc4plus
 
-* C-section (pregnancy - weather cesarion cesarean section or not)
+* C-section (pregnancy - Caesarean section yes no)
 gen csection = 0
 replace csection = 1 if m17 == 1
 tab m17 csection, m 
@@ -1032,7 +1030,7 @@ keep psu hh_num one int_date birthday birthmonth birthyear dateofbirth age_days 
 	nuts bread potato vita_veg leafy_green vita_fruit fruit_veg organ fish leg_nut yogurt ///
 	semisolid carb dairy all_meat vita_fruit_veg mixed_milk agegroup sumfoodgrp ///
 	fg0 fg1 fg2 fg3 fg4 fg5 fg6 fg7 fg8 any_solid_semi_food intro_compfood ebf age_ebf ///
-	age_cbf cont_bf cont_bf_12_23 mdd freq_solids mmf_bf mmf_all_bf mad_all_bf egg ///
+	age_cbf cont_bf cont_bf_12_23 mdd freq_solids mmf_bf mad_bf egg ///
 	egg_meat zero_fv sugar_bev unhealthy_food birth_weight cat_birth_wt lbw earlyanc anc4plus ///
 	csection mum_educ_years mum_educ caste rururb wi wi_s national_wgt regional_wgt state_wgt /// 
 	sex diar fever ari state round ebf_denom mum_work inst_birth bord 
