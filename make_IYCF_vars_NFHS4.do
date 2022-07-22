@@ -361,8 +361,11 @@ clonevar gruel        							=v412b_rec // other porridge/gruel
 clonevar poultry                               = v414a_rec //chicken_duck_other birds
 clonevar meat                                  = v414t_rec // gave child other meat
 replace meat =1 if 							     v414h_rec==1 // (beef, pork, lamb
+replace meat =1 if 							     v414a_rec==1 //chicken_duck_other birds
 
 clonevar bread                                 = v414e_rec  //food_of_bread_noodles_other_grains 
+replace bread =1 if 							 v412a_rec==1 // from q480 Any commercially fortified baby food such as Cerelac or Farex?
+replace bread =1 if 							 v412b_rec==1 /// other porridge/gruel
 
 clonevar potato                                = v414f_rec  //potatoes_cassava_other tubers 
 clonevar egg                                   = v414g_rec

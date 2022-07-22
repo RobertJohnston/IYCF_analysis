@@ -278,6 +278,8 @@ clonevar other_liq 		=q310f_rec
 clonevar yogurt			=q310g1_rec
 clonevar fortified_food =q310h_rec  // any commercially fortified food
 clonevar bread 			=q310i_rec  // any bread, roti, chapati, rice, noodles, biscuits, idli, porridge 
+replace bread =1 if 	q310h_rec==1 // any commercially fortified food
+
 clonevar vita_veg		=q310j_rec
 clonevar potato 		=q310k_rec  // any white potato, white yam, cassava or other food made from roots
 clonevar leafy_green	=q310l_rec
@@ -286,11 +288,13 @@ clonevar fruit_veg		=q310n_rec
 clonevar organ			=q310o_rec
 clonevar poultry		=q310p_rec
 clonevar meat			=q310q_rec
+replace meat =1 if 	     q310p_rec==1 // poultry
+
 clonevar egg			=q310r_rec
 clonevar fish			=q310s_rec
 clonevar leg_nut		=q310t_rec  // beans, peas, lentils, nuts
 clonevar cheese			=q310u_rec  // any cheese or other food made from milk?
-*clonevar fat			=q310v_rec  // oil, ghee, butter
+clonevar fat			=q310v_rec  // oil, ghee, butter
 clonevar semisolid		=q310w_rec  // any other solid, semi-solid or soft food
 
 lab var bread "Bread, rice, biscuits, idli, porridge"

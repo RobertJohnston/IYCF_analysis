@@ -360,10 +360,14 @@ clonevar gruel        							=v412b_rec // other porridge/gruel
 // These belong in solid/semi-solid list and will be added to bread, rice other grains
 clonevar poultry                               = v414a_rec //chicken_duck_other birds
 clonevar meat                                  = v414b_rec // gave child other meat
-replace  meat =1 if 							 v414h_rec==1 // (beef, pork-na
+replace  meat =1 if 							 v414h_rec==1 // beef, pork-na
+replace  meat =1 if 							 v414a_rec==1 // chicken_duck_other birds
+
 clonevar legume                                = v414c_rec //foods_of_beans_peas_lentils
 clonevar nuts                                  = v414d_rec
 clonevar bread                                 = v414e_rec  //food_of_bread_noodles_other_grains 
+replace  bread =1 if 							 v412b_rec==1 // other porridge/gruel
+replace  bread =1 if 							 v412a_rec==1 // from q480 Any commercially fortified baby food such as Cerelac or Farex?
 clonevar potato                                = v414f_rec  //potatoes_cassava_other tubers 
 clonevar egg                                   = v414g_rec
 clonevar vita_veg                              = v414i_rec // pumpkin_carrots_squash (yellow or orange inside 
@@ -499,7 +503,7 @@ replace isssf = 1 if  any_solid_semi_food==1
 replace isssf = . if age_days<=183 | age_days>=273
 *Corrected error in age range
 la var isssf "Intro to semi_solid, solid, soft_food 6-8 months of age"
-tab isssf, m
+tab any_solid_semi_food isssf, m
 
 *EXCLUSIVE BREASTFEEDING
 *Exclusive breastfeeding is defined as breastfeeding with no other food or drink, not even water.
@@ -1029,7 +1033,7 @@ keep psu hh_num one int_date birthday birthmonth birthyear dateofbirth age_days 
 	formula freq_milk freq_formula freq_other_milk fortified_food gruel poultry meat legume ///
 	nuts bread potato vita_veg leafy_green vita_fruit fruit_veg organ fish leg_nut yogurt ///
 	semisolid carb dairy all_meat vita_fruit_veg mixed_milk agegroup sumfoodgrp ///
-	fg0 fg1 fg2 fg3 fg4 fg5 fg6 fg7 fg8 any_solid_semi_food intro_compfood ebf age_ebf ///
+	fg0 fg1 fg2 fg3 fg4 fg5 fg6 fg7 fg8 any_solid_semi_food isssf ebf age_ebf ///
 	age_cbf cont_bf cont_bf_12_23 mdd freq_solids mmf_bf mad_bf egg ///
 	egg_meat zero_fv sugar_bev unhealthy_food birth_weight cat_birth_wt lbw earlyanc anc4plus ///
 	csection mum_educ_years mum_educ caste rururb wi wi_s national_wgt regional_wgt state_wgt /// 

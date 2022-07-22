@@ -416,6 +416,7 @@ replace milk =1 if       other_milk ==1  //  buttermilk/curd
 clonevar yogurt			=q197a1_14_rec // any cheese, yogurt or other food made from milk?
 clonevar fortified_food =q197a1_1_rec  // any commercially fortified food
 clonevar bread 			=q197a1_2_rec  // any bread, roti, chapati, rice, noodles, biscuits, idli, porridge 
+replace  bread =1 if 	 q197a1_1_rec==1 // any commercially fortified food
 clonevar legume			=q197a1_3_rec  // pulses, lentils beans legumes or foods containing legumes
 clonevar vita_veg		=q197a1_4_rec  // oranged fleshed vegetables
 clonevar potato 		=q197a1_5_rec  // any white potato, white yam, cassava or other food made from roots
@@ -553,7 +554,9 @@ replace isssf = 1 if  any_solid_semi_food>=1
 replace isssf = . if age_days<=183 | age_days>=273
 *Corrected error in age range
 la var isssf "Intro to semi_solid, solid, soft_food 6-8 months of age"
-tab  q199_1 intro_compfood, m 
+tab  q199_1 isssf, m 
+tab  any_solid_semi_food isssf, m 
+
 
 
 
@@ -1069,7 +1072,7 @@ keep psu hh_num one int_date birthday birthmonth birthyear dateofbirth age_days 
 	potato leafy_green any_solid_semi_food vita_fruit fruit_veg organ meat ///
 	egg fish cont_bf semisolid carb leg_nut dairy all_meat vita_fruit_veg ///
 	agegroup sumfoodgrp diar fever ari cont_bf cont_bf_12_23 ///
-	intro_compfood mdd currently_bf freq_solids mmf_bf freq_milk ///
+	isssf mdd currently_bf freq_solids mmf_bf freq_milk ///
 	freq_formula freq_other_milk milk_feeds feeds mmf_nobf min_milk_freq_nbf ///
 	mmf_all mixed_milk mad_all egg_meat zero_fv sugar_bev unhealthy_food ///
 	lbw cat_birth_wt anc4plus csection earlyanc mum_educ caste rururb wi wi_s state ///
