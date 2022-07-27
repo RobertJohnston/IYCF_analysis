@@ -21,14 +21,15 @@
 * 6 Adjusted survey estimates by month
 * 7 Trend analysis on seasonal affected indicators
  
-
-* Dependent variables
 /*
+* Dependent variables
+
 Complementary feeding indicators 
 2.1. Introduction of solid, semi-solid or soft foods 6–8 months (ISSSF) 
 any_solid_semi_food 
 
 2.2. Minimum dietary diversity 6–23 months (MDD) 
+currently_bf
 carb 
 leg_nut 
 dairy 
@@ -47,13 +48,11 @@ organ
 fish 
 yogurt 
 semisolid 
-Leave currently_bf in the list as it is part of MDD variable
-
-
-
 
 * Variables that are not available across all surveys
 * Gruel, Poultry
+// version 16: table round [pw = national_wgt] , c(mean gruel n gruel) format(%9.1f)
+// version 16: table round [pw = national_wgt] , c(mean poultry n  poultry) format(%9.1f)
 
 * Variables harmonized to use across all surveys
 * BREAD
@@ -115,7 +114,6 @@ gen sumfoodgrp_nm = sumfoodgrp if agemos>=6 & agemos<24
 tab agemos sumfoodgrp_nm
 tab sumfoodgrp_nm round, col
 
-
 * Data cleaning
 gen freq_solids_nm = freq_solids if freq_solids<8
 tab freq_solids_nm if agemos>=6 & agemos<24, m 
@@ -129,7 +127,13 @@ replace dairy =. if int_month==6 & round ==2	// 3 cases
 replace dairy =. if int_month==11 & round ==2	// 4 cases
 replace leafy_green =. if int_month==6 & round ==2	// 3 cases
 replace leafy_green =. if int_month==11 & round ==2	// 4 cases
-
+cap drop agegrp_3
+gen agegrp_3 = floor(agemos/6) if agemos>=6 & agemos<24
+la def agegrp 1 "6-11 M" 2 "12-17 M" 3 "18-23 M"
+la val agegrp_3 agegrp
+tab agemos agegrp_3, m 
+graph bar (count) one if agemos>=4 & agemos<28, over(agemos) 
+* evidence of age preference for whole numbers 
 
 * for independent variables in analysis, we do not need to create dummies if we specify variable type in code
 * for categorical vars use "i."
@@ -141,7 +145,6 @@ replace leafy_green =. if int_month==11 & round ==2	// 4 cases
 local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
 	i.earlyanc i.csection i.inst_birth i.bord c.age_days c.age_days#c.age_days ///
 	i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
-
 
 // 2.1. Introduction of solid, semi-solid or soft foods 6–8 months (ISSSF) 
 // 2.2. Minimum dietary diversity 6–23 months (MDD) 
@@ -185,19 +188,14 @@ foreach var of varlist sumfoodgrp freq_solids milk_feeds feeds {
 
 
 * Analysis
-* Data by background variables (weighted estimates)
 
 
 
-
+* Table 1
 * Table for prevalence estimate from complementary feeding (dependent) variables
-
 
 local DepVars currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg  fortified_food meat bread potato vita_veg leafy_green vita_fruit organ fish yogurt semisolid any_solid_semi_food mdd mmf_bf  mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv
 * DepVars not including sumfoodgrp feeds
-
-
-
 
 putexcel set CF_prev_table, replace
 putexcel A1 = "Table 2: Prevalence of complementary feeding variables by survey, India Surveys 2005-2021"
@@ -235,13 +233,11 @@ foreach var of varlist `DepVars' {
 putexcel save
 
 
-* variables that are not comparable across all surveys
-version 16: table round [pw = national_wgt] , c(mean gruel n gruel) format(%9.1f)
-version 16: table round [pw = national_wgt] , c(mean poultry n  poultry) format(%9.1f)
 
 
 
-
+* Analysis
+* What are the most appropriate covariates? 
 
 local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus i.inst_birth ///
 	i.bord c.age_days c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
@@ -249,9 +245,46 @@ logit mad_all `ContVars' [pw = national_wgt]
 * Pseudo R2 = 0.07
 
 
-	
+* Table 2
+* Data by background variables (weighted estimates)
 
+local ContVars  mum_educ wi caste rururb anc4plus cat_birth_wt sex bord agegrp_3 diar fever ari mum_work 
+
+putexcel set CF_background_vars, replace
+putexcel A1 = "Table 2: Percent distribution of background variables by survey, India Surveys 2005-2021"
+putexcel A2 = "Variable"
+putexcel C2 = "NFHS-3"
+putexcel D2 = "RSOC"
+putexcel E2 = "NFHS-4"
+putexcel F2 = "CNNS"
+putexcel G2 = "NFHS-5"
+
+local RowNum = 4
 	
+foreach var of varlist `ContVars' {
+	tabulate `var' round [aw = national_wgt] if agemos>=6 & agemos<=23, col matcell(cell) matrow(row)
+	putexcel C`RowNum' = matrix(cell), nformat(##.0)
+	local RowNum = `RowNum' + r(r) +1
+	di `RowNum'
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* Table 3
 * Tables for dependent variables, max / min / amplitude / statistical significance of monthly variation
 
 * Assumption, if there is no variation in pooled 5 survey data, then no variation in single survey dataset
