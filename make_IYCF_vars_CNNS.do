@@ -430,6 +430,28 @@ gen exbf_x = exbf*100
 cap drop exbf_x
 
 
+*Breastfeeding area graph
+* breastfeeding status
+gen diet=1
+replace diet=2 if (v409>=1 & v409<=7) 					// water
+
+foreach xvar of varlist v409a v410 v410a v412c v413*{ 	// other liquids
+	replace diet=3 if `xvar'>=1 & `xvar'<=7
+}
+foreach xvar of varlist v411 v411a {  					// other milks
+	replace diet=4  if `xvar'>=1 & `xvar'<=7
+}
+foreach xvar of varlist v414* { 						// solids
+	replace diet=5 if `xvar'>=1 & `xvar'<=7
+}
+replace diet=5 if v412a==1 | v412b==1 | m39a==1
+replace diet=0 if m4!=95
+* add missing 
+
+
+
+
+
 
 * MEDIAN duration of exclusive breastfeeding
 cap drop age_ebf
@@ -528,6 +550,7 @@ replace mmf_bf=1 if freq_solids>=2 & currently_bf==1 & age_days>183 & age_days<2
 replace mmf_bf=1 if freq_solids>=3 & currently_bf==1 & age_days>=243 & age_days<730 
 replace mmf_bf=. if currently_bf!=1
 replace mmf_bf =. if age_days<=183 | age_days>=730
+replace mmf_bf =. if currently_bf!=1
 la val mmf_bf no_yes
 tab mmf_bf, m 
 
@@ -602,6 +625,7 @@ tab feeds, m
 gen mmf_nobf=0
 replace mmf_nobf=1 if feeds>=4 & freq_solids>=1 & currently_bf!=1
 replace mmf_nobf =. if age_days<=183 | age_days>=730 
+replace mmf_nobf =. if currently_bf==1
 tab mmf_nobf, m 
 
 
@@ -610,6 +634,7 @@ tab mmf_nobf, m
 gen min_milk_freq_nbf =0
 replace min_milk_freq_nbf =1 if milk_feeds >=2 & currently_bf!=1 
 replace min_milk_freq_nbf =. if age_days<=183 | age_days>=730
+replace min_milk_freq_nbf =. if currently_bf==1
 la var min_milk_freq_nbf "Minimum Milk Frequency for Non-Breastfed Child"
 tab min_milk_freq_nbf, m 
 // graph bar (mean) min_milk_freq_nbf currently_bf if agemons < 24, over(agemons) 

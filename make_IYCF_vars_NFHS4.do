@@ -102,7 +102,7 @@ gen agemos = floor(age_days/30.42) if b5==1
 tab agemos, m 
 cap drop agemos_x
 gen agemos_x = v008 -  b3 if b5==1
-scatter agemos_x agemos
+// scatter agemos_x agemos
 * large difference (2000 cases) between age in days and agemos
 
 
@@ -389,6 +389,13 @@ clonevar sweets   								= v414r
 
 clonevar semisolid                             = v414s_rec //other solid or semi-solid food	
 
+* further analysis
+// tab state fortified_food if round ==3, row 
+// tab agemos fortified_food if round ==3, row 
+//
+// tab state bread if round ==3, row 
+// tab agemos bread if round ==3, row 
+
 
 *-----------------------------------------------------------------------------------------------------------
 * FOLLOWING ARE THE VARS OF CNNS TO CHECK MATCH WITH CNNS VARIABLES
@@ -459,7 +466,6 @@ replace fruit_veg = 0 if fruit_veg==0 | fruit_veg ==9
 foreach var of varlist carb leg_nut dairy all_meat vita_fruit_veg currently_bf  {
 	lab val `var' no_yes
 }
-
 	
 foreach var of varlist carb dairy all_meat egg vita_fruit_veg fruit_veg currently_bf {
 	tab `var' , m
@@ -535,6 +541,24 @@ replace ebf_denom = . if b5 !=1
 gen ebf_x = ebf*100
 version 16: table one [pw = v005/1000000] if ebf_denom==1, c(mean ebf_x n ebf_x) format(%9.1f)
 // NFHS-4 REPORT  EBF<6M  	55.0    21,365 - youngest child < 6 months living with mother
+
+*Breastfeeding area graph
+* breastfeeding status
+gen diet=1
+replace diet=2 if (v409>=1 & v409<=7) 					// water
+
+foreach xvar of varlist v409a v410 v410a v412c v413*{ 	// other liquids
+	replace diet=3 if `xvar'>=1 & `xvar'<=7
+}
+foreach xvar of varlist v411 v411a {  					// other milks
+	replace diet=4  if `xvar'>=1 & `xvar'<=7
+}
+foreach xvar of varlist v414* { 						// solids
+	replace diet=5 if `xvar'>=1 & `xvar'<=7
+}
+replace diet=5 if v412a==1 | v412b==1 | m39a==1
+replace diet=0 if m4!=95
+* add missing 
 
 
 * MEDIAN duration of exclusive breastfeeding
@@ -631,6 +655,7 @@ replace mmf_bf=1 if freq_solids>=2 & currently_bf==1 & age_days>183 & age_days<2
 replace mmf_bf=1 if freq_solids>=3 & currently_bf==1 & age_days>=243 & age_days<730 
 replace mmf_bf=. if currently_bf!=1
 replace mmf_bf =. if age_days<=183 | age_days>=730
+replace mmf_bf =. if currently_bf!=1
 la val mmf_bf no_yes
 tab mmf_bf, m 
 
@@ -697,6 +722,7 @@ gen mmf_nobf=0
 replace mmf_nobf=1 if feeds>=4 & freq_solids>=1 & currently_bf!=1
 replace mmf_nobf=. if currently_bf==1
 replace mmf_nobf =. if age_days<=183 | age_days>=730 
+replace mmf_nobf =. if currently_bf==1
 la val mmf_nobf no_yes
 tab mmf_nobf, m 
 
@@ -707,6 +733,7 @@ gen min_milk_freq_nbf =0
 replace min_milk_freq_nbf =1 if milk_feeds >=2 & currently_bf!=1 
 replace min_milk_freq_nbf =. if currently_bf==1
 replace min_milk_freq_nbf =. if age_days<=183 | age_days>=730
+replace min_milk_freq_nbf =. if currently_bf==1
 la var min_milk_freq_nbf "Minimum Milk Frequency for Non-Breastfed Child"
 la val min_milk_freq_nbf no_yes
 tab min_milk_freq_nbf, m 
@@ -791,7 +818,7 @@ gen temp = birth_weight if birth_weight<9995
 cap drop count_birth_weight
 bysort temp: egen count_birth_weight = count(temp) 
 replace temp=. if temp >= 6
-twoway line count_birth_weight temp
+// twoway line count_birth_weight temp
 
 cap drop cat_birth_wt
 recode birth_weight (0/0.249=6)(0.25/1.499=1)(1.5/2.499=2)(2.5/3.999=3)(4/10.999=4)(11/10000=7), gen(cat_birth_wt)
@@ -872,7 +899,7 @@ replace mum_educ_years = v107 if v106==1
 replace mum_educ_years = 5 + v107 if v106==2
 replace mum_educ_years = 12 + v107 if v106==3
 tab mum_educ_years
-scatter   mum_educ_years v106
+// scatter   mum_educ_years v106
 
 recode mum_educ_years (0=1)(1/4=2)(5/9=3)(10/11=4)(12/25=5)(26/max=99), gen(mum_educ)
 lab var mum_educ "Maternal Education"
