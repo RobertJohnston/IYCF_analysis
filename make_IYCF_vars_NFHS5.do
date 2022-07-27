@@ -667,23 +667,28 @@ tab any_solid_semi_food isssf, m
 
 *Breastfeeding area graph
 * breastfeeding status
-
-gen diet=1
-replace diet=2 if (v409>=1 & v409<=7) 					// water
-
-foreach xvar of varlist v409a v410 v410a v412c v413*{ 	// other liquids
-	replace diet=3 if `xvar'>=1 & `xvar'<=7
-}
-foreach xvar of varlist v411 v411a {  					// other milks
-	replace diet=4  if `xvar'>=1 & `xvar'<=7
-}
-foreach xvar of varlist v414* { 						// solids
-	replace diet=5 if `xvar'>=1 & `xvar'<=7
-}
-replace diet=5 if v412a==1 | v412b==1 | m39a==1
-replace diet=0 if m4!=95
-
+gen diet=1 											// Exclusive BF
+replace diet=2 if water==1							// water
+replace diet=3 if other_liq==1 | juice==1 | tea==1 | broth==1 // other liquids
+replace diet=4 if milk ==1 | formula==1             // other milks
+replace diet=5 if any_solid_semi_food==1   			// solids
+replace diet=6 if currently_bf !=1
 * add missing 
+replace diet=7 if currently_bf==. & any_solid_semi_food==.
+replace diet=. if agemos>=24
+
+la def diet 0 "Not BF" 1 "Exclusive BF" 2 "H2O & BF" 3 "Non-milk liq & BF" 4 "Milk/Form & BF" 5 "CF & BF" 6 "Not BF" 7 "Missing"
+la val diet diet
+label var diet "Breastfeeding status for last-born child under 2 years"
+tab diet, m 
+
+tab diet currently_bf
+tab diet other_liq
+tab diet juice
+tab diet broth
+tab diet formula
+tab diet milk
+tab diet any_solid_semi_food
 
 * Create correct sample
 * Note: The following do files select for the youngest child under 2 years living with the mother. Therefore some cases will be dropped. 
@@ -692,15 +697,12 @@ replace diet=0 if m4!=95
 // * if caseid is the same as the prior case, then not the last born
 // keep if _n == 1 | caseid != caseid[_n-1]
 
-label define bf_status 0"not bf" 1"exclusively bf" 2"bf & plain water" 3"bf & non-milk liquids" 4"bf & other milk" 5"bf & complementary foods"
-label values diet bf_status
-label var diet "Breastfeeding status for last-born child under 2 years"
-
 //exclusively breastfed
 recode diet (1=1) (else=0) if b19<6, gen(ebf)
 label values ebf yesno
 label var ebf "Exclusively breastfed - last-born under 6 months"
 
+tab diet ebf, m 
 
 * Exclusive breastfeeding 
 *Age under 6
