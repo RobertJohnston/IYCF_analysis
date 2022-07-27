@@ -74,7 +74,7 @@ replace hw16 = 15 if hw16 > 31
 tab hw16
 * in theory 15th is middle of the month.
 * We have created heaping on 15th of month
-kdensity hw16 if b5==1
+// kdensity hw16 if b5==1
 
 gen birthday =  hw16
 gen birthmonth = b1
@@ -93,7 +93,7 @@ replace age_days = int_date - dateofbirth
 
 replace age_days =. if age_days>1825
 tab age_days,m 
-kdensity age_days if b5==1
+// kdensity age_days if b5==1
 
 gen agemos = floor(age_days/30.42) if b5==1
 graph bar (count) one, over(agemos)
@@ -139,8 +139,8 @@ replace eibf_timing = mod(m34,200)*24 if m34>=201 & m34<=223
 replace eibf_timing =.  if age_days>=730
 la var eibf_timing "Timing of start of breastfeeding (in hours)"
 tab eibf_timing, m
-scatter m34 eibf_timing
-kdensity eibf_timing
+// scatter m34 eibf_timing
+// kdensity eibf_timing
 
 
 
