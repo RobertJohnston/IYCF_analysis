@@ -88,14 +88,6 @@ No specific question asked on plantain
 8. other fruits and vegetables.
 
 */
-la var currently_bf "1. breastmilk"
-la var carb "2. grains, roots, tubers and plantains"
-la var leg_nut "3. pulses (beans, peas, lentils), nuts and seeds
-la var dairy "4. dairy products (milk, infant formula, yogurt, cheese)"
-la var all_meat "5. flesh foods (meat, fish, poultry, organ meats)"
-la var egg "6. eggs"
-la var vita_fruit_veg "7. vitamin-A rich fruits and vegetables" 
-la var fruit_veg "8. other fruits and vegetables" 
 
 * if vars are not represented by each survey - like X Y Z, They are not included
 
@@ -117,6 +109,26 @@ sum agemos
 * Figure 1 Percent distribution of data by month of data collection and survey round (NFHS-3, RSOC, NFHS-4, CNNS and NFHS-5)
 tab  int_month round if agemos>=6 & agemos<24, m
 
+sum sumfoodgrp freq_solids milk_feeds feeds if agemos>=6 & agemos<24
+
+gen sumfoodgrp_nm = sumfoodgrp if agemos>=6 & agemos<24
+tab agemos sumfoodgrp_nm
+tab sumfoodgrp_nm round, col
+
+
+* Data cleaning
+gen freq_solids_nm = freq_solids if freq_solids<8
+tab freq_solids_nm if agemos>=6 & agemos<24, m 
+tab  freq_solids_nm round if agemos>=6 & agemos<24, col
+
+* indicators with extreme small sample for monthly estimates
+replace isssf = . if int_month==5 & round ==5  	// 1 case
+replace mdd =. if int_month==11 & round ==2 	// 2 cases
+replace mdd =. if int_month==6 & round ==2		// 3 cases
+replace dairy =. if int_month==6 & round ==2	// 3 cases
+replace dairy =. if int_month==11 & round ==2	// 4 cases
+replace leafy_green =. if int_month==6 & round ==2	// 3 cases
+replace leafy_green =. if int_month==11 & round ==2	// 4 cases
 
 
 * for independent variables in analysis, we do not need to create dummies if we specify variable type in code
@@ -339,12 +351,14 @@ di "`ExportPath'/`FileName'"
 
 * Plot adjusted vs unadjusted estimates onto one graph
 
+putdocx begin, font("Calibri") 
 
 * ISSSF, mdd, mmf_all, egg_meat, dairy vita_fruit leafy_green
 * mmf_all does not have NFHS-3 so need to create different code
 
+
 local DepVars = "isssf mdd egg_meat dairy vita_fruit leafy_green"
-local DepVars = "mmf_all"
+// local DepVars = "mmf_all"
 
 foreach var of varlist `DepVars' {
 
@@ -363,12 +377,10 @@ foreach var of varlist `DepVars' {
 
 	preserve
 	use file1, clear
-	replace _m1 = 1 in 5 if `var'=="mmf_all" // add NFHS-3
-	replace _at =1
-	append using file2  
-	replace _m1 = 1 in 10 if `var'=="mmf_all" // add NFHS-3
-	replace _at =2 in 6/10
-	sort _at _m1
+	replace _at=1
+	append using file2 
+	replace _at=2 if _at==.
+	save `var'_round, replace
 
  	replace _m1 = _m1-0.05 if _at==1  // offset plotting on graph
 
@@ -383,19 +395,25 @@ foreach var of varlist `DepVars' {
  		   order(1 "Unadjusted - Midpoint" 4 "Adjusted - Midpoint" )) scheme(s1mono) ///
  		   graphregion(color(white)) bgcolor(white) 
  	graph export `var'.tif, as(tif) replace
+	putdocx paragraph, halign(left)
+	putdocx image `var'.tif, linebreak(1)
 
 	restore
 }
 
+* Graph for mmf_all created and saved separately - don't forget to add. 
+
+local ExportPath "C:/TEMP/Seasonality"
+local FileName "Comp Feed Seasonality.docx"
+putdocx save "`ExportPath'/`FileName'", replace
+	
 
 
 
 * Merge graphs together
-graph combine ebf_unadj_adj_mar water_unadj_adj_mar , xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
+graph combine graph1 graph2 , xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
 graph close ebf_unadj_adj_mar water_unadj_adj_mar 
 graph export "EBF and giving water unadjusted, adjusted and set to March as month of data collection.png", width(6000) replace
-
-
 
 * Add combomarginsplot to word file
 putdocx begin, font("Calibri") 
@@ -406,140 +424,162 @@ putdocx image water_unadj_adj_mar.tif, linebreak(1)
 
 putdocx save "`ExportPath'/`FileName'", append
 
-* attention to include all socio-economic vars i.wi i.mum_educ i.mum_work ***
-
-* Plot adjusted EBF estimates by month from pooled data in one graph
-local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
-	
-logit ebf_x `ContVars' [pw = national_wgt] 
-margins int_month, saving(file1, replace)
-marginsplot, title("Exclusive breastfeeding by month of data collection") ///
-	ytitle("Proportion") ylab(0.5(.1)0.7) yscale(range(0.5 0.7)) ///
-	name(month_ebf, replace)
-graph export ebf_month.tif, as(tif) replace
-
-putdocx pagebreak
-putdocx paragraph, halign(left)
-putdocx image ebf_month.tif, linebreak(1)
 
 
-* Plot adjusted WATER estimates by month from pooled data in one graph
-local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
-	
-logit water_x `ContVars' [pw = national_wgt] 
-margins int_month, saving(file1, replace)
-marginsplot, title("Giving water by month of data collection") ///
-	ytitle("Proportion") ylab(0.2(.1)0.4) yscale(range(0.2 0.4)) ///
-	name(month_water, replace)
-graph export h20_month.tif, as(tif) replace
-
-* Add combomarginsplot to word file
-putdocx pagebreak
-putdocx paragraph, halign(left)
-putdocx image h20_month.tif, linebreak(1)
 
 
-* Merge graphs together
-graph combine month_ebf month_water , xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
-graph close month_ebf month_water 
-graph export "Feeding variables by month of data collection.png", width(6000) replace
+* Plot adjusted estimates by month from pooled data in one graph
 
 putdocx begin, font("Calibri") 
 
-* Add combomarginsplot to word file
-putdocx pagebreak
-putdocx paragraph, halign(left)
-putdocx image "Feeding variables by month of data collection.png", linebreak(1)
+local DepVars = "isssf mdd mmf_all dairy vita_fruit leafy_green"
+// local DepVars = "mmf_all"
 
-putdocx save "`ExportPath'/`FileName'", append
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
 
+* attention to include all socio-economic vars i.wi i.mum_educ i.mum_work ***
+
+foreach var of varlist `DepVars' {
+	logit `var' `ContVars' [pw = national_wgt] 
+	margins int_month, saving(`var'_month, replace)
+	marginsplot, title("`var' by month of data collection (pooled)") ///
+		ytitle("Proportion")  /// ylab(0.5(.1)0.7) yscale(range(0.5 0.7))
+		name(`var', replace)
+	graph export `var'_month.tif, as(tif) replace
+
+	putdocx pagebreak
+	putdocx paragraph, halign(left)
+	putdocx image ebf_month.tif, linebreak(1)
+
+}
+* A4 size
+graph combine isssf mdd mmf_all  dairy vita_fruit leafy_green, xsize(11.75) ysize(7) iscale(.5) name(comb, replace)
+graph close isssf mdd mmf_all  dairy vita_fruit leafy_green
+graph export "CF indicators by month by survey.png", width(6000) replace
 
 local ExportPath "C:/TEMP/Seasonality"
 local FileName "Comp Feed Seasonality.docx"
+putdocx save "`ExportPath'/`FileName'", append
 
 
-* Exclusive breastfeeding	
+
+
 * Plot the predicted values of the dependent variable for each survey in five graphs for five surveys
 * Combomarginsplot - joining five graphs onto one background
 
 * Analysis of interaction between month and round
-local ContVars ib12.int_month##i.round  i.state i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari 
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
 
-* Code below uses data available from dummy==x
-forval x = 1/5 {
-	logit ebf_x `ContVars' [pw = national_wgt] if round==`x' 
-	margins int_month#round, saving(ebf_round`x', replace)
-	local RoundValueLabel : value label round
-	local GraphLabel: label `RoundValueLabel' `x'
-	marginsplot, title("`GraphLabel'") ytitle("Proportion") name(file`x', replace) ///
-		ylab(0.2(.1)0.8) yscale(range(0.2 0.8))
-}
+local DepVars = "isssf mdd egg_meat dairy vita_fruit leafy_green"
+local DepVars = "egg_meat dairy vita_fruit leafy_green"
+* mmf_all
 
-* Code uses all entire regression estimation sample to calculate the margins, with the value of dummy temporarily reset to x in every observation.
-// logit ebf_x `ContVars' [pw = national_wgt] 
-// forval x = 1/5 {
-// 	margins int_month, at(round==`x') saving(ebf_round`x', replace)
-// 	local RoundValueLabel : value label round
-// 	local GraphLabel: label `RoundValueLabel' `x'
-// 	marginsplot, title("`GraphLabel'") ytitle("Proportion") name(file`x', replace) ///
-// 		ylab(0.2(.1)0.8) yscale(range(0.2 0.8))
-// }
-// graph combine file1 file2 file3 file4 file5, xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
-// graph close file1 file2 file3 file4 file5
-graph export "EBF by month by survey.png", width(6000) replace
-
-* Add EBF survey/month to word file
-putdocx begin, font("Calibri") 
-putdocx pagebreak
-putdocx paragraph, halign(left)
-putdocx text ("EBF by month by survey")
-putdocx image "EBF by month by survey.png", linebreak(1)
-
-
-* WATER
-* Plot the predicted values of the dependent variable in five graphs for five surveys
-* Combomarginsplot - joining five graphs onto one background
-
-local ContVars i.state i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari 
-
-* this only uses the round data not pooled data for calculations
-forval x = 1/5 {
-	logit water_x ib12.int_month##i.round `ContVars' [pw = national_wgt] if round==`x' 
-	margins int_month#round, saving(h20_round`x', replace)
-	local RoundValueLabel : value label round
-	local GraphLabel: label `RoundValueLabel' `x'
-	marginsplot, title("`GraphLabel'")  ytitle("Proportion") name(file`x', replace) ///
-		ylab(0.1(.1)0.8) yscale(range(0.1 0.8))
-}
-graph combine file1 file2 file3 file4 file5, xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
-graph close file1 file2 file3 file4 file5
-graph export "Water by month by survey.png", width(6000) replace
-
-* Add EBF survey/month to word file
-
-putdocx pagebreak
-putdocx paragraph, halign(left)
-putdocx text ("Water by month by survey")
-putdocx image "Water by month by survey.png", linebreak(1)
-
-putdocx save "`ExportPath'/`FileName'", append
+foreach var of varlist `DepVars' {
 	
+	* Code below uses data available from dummy==x
+	forval x = 1/5 {
+		logit `var' `ContVars' [pw = national_wgt] if round==`x' 
+		margins int_month#round, saving(`var'_round`x', replace)
+		local RoundValueLabel : value label round
+		local GraphLabel: label `RoundValueLabel' `x'
+		marginsplot, title("`GraphLabel'") ytitle("Proportion") name(file`x', replace) 
+	}
+// 	* Code uses all entire regression estimation sample to calculate the margins, with the value of dummy temporarily reset to x in every observation.
+// 	* Do we want to use the pooled data or the exclusive survey 
+// 	* calculates one trend and applies variation for each round
+// 	logit `var' `ContVars' [pw = national_wgt] 
+// 	forval x = 1/5 {
+// 			margins int_month, at(round==`x') saving(`var'_round`x', replace)
+// 			local RoundValueLabel : value label round
+// 			local GraphLabel: label `RoundValueLabel' `x'
+// 			marginsplot, title("`GraphLabel'") ytitle("Proportion") name(file`x', replace) 
+// 		}
+//	
+	graph combine file1 file2 file3 file4 file5, xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
+	graph close file1 file2 file3 file4 file5
+	graph export "`var' by month by survey.png", width(6000) replace
+	
+	putdocx begin, font("Calibri") 
+	putdocx pagebreak
+	putdocx paragraph, halign(left)
+	putdocx text ("`var' by month by survey")
+	putdocx image "`var' by month by survey.png", linebreak(1)
+
+	local ExportPath "C:/TEMP/Seasonality"
+	local FileName "Comp Feed Seasonality.docx"
+	putdocx save "`ExportPath'/`FileName'", append
+}
+
+
+* Trend of vita_fruit evident in NFHS-3 unweighted.  Check weighted and adjusted
+
+
+
+
+
+
+
+
+// marginsplot yaxis
+// 	ylab(0.08(.02)0.22) yscale(range(0.08 0.22))
+
 * For Excel Graph
-* Use estimates that assume that all data was collected in April
 * see exported data in ebf_roundX
+
 * NFHS-5
-* start 6 2019, mid   5 2020, end   5 2021
+* start 6 2019, mid   5 2020, end   5 202
+
+
+
+* Feeding Egg & Meat - driven by early survey? - put in Annex
+
+	
+1
 
 
 * FOR ANNEXES
+
+
+* EXPLORE # of Dietary Diversity and Number of Feedings
+* no strong evidence of seasonal variation
+putdocx begin, font("Calibri") 
+
+local DepVars = "sumfoodgrp_nm freq_solids_nm"
+
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
+* attention to include all socio-economic vars i.wi i.mum_educ i.mum_work ***
+
+foreach var of varlist `DepVars' {
+	reg `var' `ContVars' [pw = national_wgt] 
+	margins int_month, saving(`var'_month, replace)
+	marginsplot, title("`var' by month of data collection (pooled)") ///
+		ytitle("Proportion")  /// ylab(0.5(.1)0.7) yscale(range(0.5 0.7))
+		name(`var', replace)
+	graph export `var'_month.tif, as(tif) replace
+
+	putdocx pagebreak
+	putdocx paragraph, halign(left)
+	putdocx image ebf_month.tif, linebreak(1)
+
+}
+* A4 size
+graph combine sumfoodgrp_nm freq_solids_nm , xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
+graph close sumfoodgrp_nm freq_solids_nm
+graph export "Dietary diversity and food frequency indicators by month by survey.png", width(6000) replace
+
+local ExportPath "C:/TEMP/Seasonality"
+local FileName "Comp Feed Seasonality.docx"
+putdocx save "`ExportPath'/`FileName'", append
+
+
+
 
 * REGION
 tab region round, m
