@@ -93,7 +93,8 @@ No specific question asked on plantain
 set scheme s1mono
 
 * Include paths 
-include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
+// include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
+include "C:\Robert\IYCF Analysis Samsung\robert_paths.do"
 
 * Load Data
 use iycf_5surveys.dta, clear 
@@ -120,20 +121,42 @@ tab freq_solids_nm if agemos>=6 & agemos<24, m
 tab  freq_solids_nm round if agemos>=6 & agemos<24, col
 
 * indicators with extreme small sample for monthly estimates
-replace isssf = . if int_month==5 & round ==5  	// 1 case
-replace mdd =. if int_month==11 & round ==2 	// 2 cases
-replace mdd =. if int_month==6 & round ==2		// 3 cases
-replace dairy =. if int_month==6 & round ==2	// 3 cases
-replace dairy =. if int_month==11 & round ==2	// 4 cases
-replace leafy_green =. if int_month==6 & round ==2	// 3 cases
-replace leafy_green =. if int_month==11 & round ==2	// 4 cases
+
+local DepVars = "isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg bread leafy_green potato vita_veg fortified_food yogurt vita_fruit meat organ fish"
+// local DepVars = "mdd"
+
+foreach var of varlist `DepVars' {
+	forvalues num_round =1/5 {
+		forvalues num_month =1/12 {
+			sum `var' if round==`num_round' & int_month==`num_month'
+			di "Round-`num_round' and Month-`num_month'" 
+			replace `var' =. if r(N)<30 & round==`num_round' & int_month==`num_month'
+		}
+	}
+}
+
+* Double check corrections
+version 16: table int_month round, c(n mdd)
+
+
 cap drop agegrp_3
 gen agegrp_3 = floor(agemos/6) if agemos>=6 & agemos<24
 la def agegrp 1 "6-11 M" 2 "12-17 M" 3 "18-23 M"
 la val agegrp_3 agegrp
 tab agemos agegrp_3, m 
 graph bar (count) one if agemos>=4 & agemos<28, over(agemos) 
-* evidence of age preference for whole numbers 
+* slight evidence of age preference for whole numbers 
+
+* CLEANED Data
+save iycf_5surveys_cleaned.dta, replace 
+* Open if not opened already
+use iycf_5surveys_cleaned.dta, clear 
+
+
+
+
+
+
 
 * for independent variables in analysis, we do not need to create dummies if we specify variable type in code
 * for categorical vars use "i."
@@ -270,20 +293,6 @@ foreach var of varlist `ContVars' {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 * Table 3
 * Tables for dependent variables, max / min / amplitude / statistical significance of monthly variation
 
@@ -312,7 +321,7 @@ local RowNum = 2
 foreach var of varlist `DepVars' {
 	di "`var'"
  	local RowNum = `RowNum' +1
-	logit `var' `ContVars' [pw = national_wgt] if agemos < 24
+	logit `var' `ContVars' [pw = national_wgt] if agemos>=6 & agemos<=23
 	margins 
 	* save r(table) to normal matrix
 	matrix output = r(table)
@@ -325,8 +334,8 @@ foreach var of varlist `DepVars' {
 	putexcel C`RowNum' = (output[2,1] * sqrt(`r(N)')), nformat(number_d2) // standard deviation two digits
 	putexcel G`RowNum' = `r(N)', nformat(#,###) 
 
-	margins int_month
-	putexcel set margin_output, replace
+	margins int_month, saving(min_max_file, replace)
+	putexcel set margin_output, replace // replace this with stata margins output
 	* Add Matrix
 	putexcel A1 = matrix(r(table)'), names
 	* Add varname to Matrix
@@ -348,7 +357,68 @@ foreach var of varlist `DepVars' {
 
 
 
-* For each change in age groups. 
+* Table 3 NO EXCEL FILES only putexcel
+* Tables for dependent variables, max / min / amplitude / statistical significance of monthly variation
+
+* Assumption, if there is no variation in pooled 5 survey data, then no variation in single survey dataset
+* Start Min Max Table 
+putexcel set min_max_table, replace
+putexcel A1 = "Table 3: Annual prevalence & standard deviation with monthly estimates of minimum, maximum and amplitude of feeding variables adjusted for socio-demographic variation, India Surveys 2005-2021"
+putexcel A2 = "Var"
+putexcel B2 = "Prevalence"
+putexcel C2 = "SD"
+putexcel D2 = "Min"
+putexcel E2 = "Max"
+putexcel F2 = "Amp"
+putexcel G2 = "Proport- ional change"
+putexcel H2 = "Stat sig variation"
+putexcel I2 = "N"
+
+local DepVars = "isssf mdd mmf_bf  mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg bread leafy_green potato vita_veg fortified_food yogurt vita_fruit meat organ fish"
+// local DepVars = "isssf"
+
+
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus  ///
+	i.inst_birth i.bord c.age_days c.age_days#c.age_days ///
+	i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
+local RowNum = 2
+
+foreach var of varlist `DepVars' {
+	di "`var'"
+ 	local RowNum = `RowNum' +1
+	logit `var' `ContVars' [pw = national_wgt] if agemos>=6 & agemos<=23
+	margins 
+	* save r(table) to normal matrix
+	matrix output = r(table)
+	local temp = "`r(predict1_label)'"
+	local temp1 = substr("`temp'",4,.)
+	local var_name = subinstr("`temp1'",")","",.)
+	putexcel A`RowNum' = "`var_name'"
+	putexcel B`RowNum' = (output[1,1] * 100), nformat(0.0)  // mean one digit 
+	* Note SD is calculated as SD = SE * sqrt(N)
+	putexcel C`RowNum' = (output[2,1] * sqrt(`r(N)')), nformat(number_d2) // standard deviation two digits
+	putexcel G`RowNum' = `r(N)', nformat(#,###) 
+
+	margins int_month, saving(min_max_file, replace)
+	preserve
+	use min_max_file
+	* Add varname to min_max_file
+	gen varname = "`r(predict1_label)'"
+	sum _margin, meanonly
+	local min = r(min) *100
+	local max = r(max) *100
+	local amp = (`max'-`min')/2
+	putexcel set min_max_table, modify
+	putexcel D`RowNum' = `min', nformat(0.0)  		// min
+	putexcel E`RowNum' = `max', nformat(0.0) 	  	// max
+	putexcel I`RowNum' = `amp', nformat(number_d2)  // amplitude
+	putexcel save
+	restore
+}
+
+
+
 
 
 
@@ -375,11 +445,7 @@ di "`ExportPath'/`FileName'"
 
 
 * DepVars
-* add corrections for selection of correct denominators
-// cap drop ebf_x
-// gen ebf_x = ebf*100 if agemos <6
-// tab agemos ebf_x 
-// tab round ebf_x
+
 
 
 * Plot adjusted vs unadjusted estimates onto one graph
@@ -391,7 +457,6 @@ putdocx begin, font("Calibri")
 
 
 local DepVars = "isssf mdd egg_meat dairy vita_fruit leafy_green"
-// local DepVars = "mmf_all"
 
 foreach var of varlist `DepVars' {
 
@@ -443,30 +508,14 @@ putdocx save "`ExportPath'/`FileName'", replace
 
 
 
-* Merge graphs together
-graph combine graph1 graph2 , xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
-graph close ebf_unadj_adj_mar water_unadj_adj_mar 
-graph export "EBF and giving water unadjusted, adjusted and set to March as month of data collection.png", width(6000) replace
-
-* Add combomarginsplot to word file
-putdocx begin, font("Calibri") 
-putdocx pagebreak
-putdocx paragraph, halign(left)
-putdocx image ebf_unadj_adj_mar.tif, linebreak(1)
-putdocx image water_unadj_adj_mar.tif, linebreak(1)
-
-putdocx save "`ExportPath'/`FileName'", append
 
 
+* ONE Plot adjusted estimates by month from pooled data in one graph
+* TWO Plot dependent variable for each survey in five graphs for five surveys
 
 
-
-* Plot adjusted estimates by month from pooled data in one graph
-
-putdocx begin, font("Calibri") 
-
-local DepVars = "isssf mdd mmf_all dairy vita_fruit leafy_green"
-// local DepVars = "mmf_all"
+// local DepVars = "isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all egg_meat carb leg_nut bread leafy_green vita_fruit"
+local DepVars = "carb leg_nut bread leafy_green vita_fruit"
 
 local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
@@ -477,24 +526,48 @@ local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 foreach var of varlist `DepVars' {
 	logit `var' `ContVars' [pw = national_wgt] 
 	margins int_month, saving(`var'_month, replace)
-	marginsplot, title("`var' by month of data collection (pooled)") ///
+	marginsplot, title("`var'") ///
 		ytitle("Proportion")  /// ylab(0.5(.1)0.7) yscale(range(0.5 0.7))
 		name(`var', replace)
 	graph export `var'_month.tif, as(tif) replace
-
+	
+	putdocx begin, font("Calibri") 
 	putdocx pagebreak
 	putdocx paragraph, halign(left)
-	putdocx image ebf_month.tif, linebreak(1)
+	putdocx image `var'_month.tif, linebreak(1)
+	
+	* Put variables of interest onto one page A4 size
+	// graph combine isssf mdd mmf_all  dairy vita_fruit leafy_green, xsize(11.75) ysize(7) iscale(.5) name(comb, replace)
+	// graph close isssf mdd mmf_all  dairy vita_fruit leafy_green
+	// graph export "CF indicators by month of data collection (pooled).png", width(6000) replace
+	//
+	// local ExportPath "C:/TEMP/Seasonality"
+	// local FileName "Comp Feed Seasonality.docx"
+	// putdocx save "`ExportPath'/`FileName'", append
 
+	
+	* Code below uses data available from dummy==x
+	forval x = 1/5 {
+		logit `var' `ContVars' [pw = national_wgt] if round==`x' 
+		margins int_month#round, saving(`var'_round`x', replace)
+		local RoundValueLabel : value label round
+		local GraphLabel: label `RoundValueLabel' `x'
+		marginsplot, title("`GraphLabel'") ytitle("Proportion") name(file`x', replace) 
+	}
+
+	graph combine file1 file2 file3 file4 file5, xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
+	graph close file1 file2 file3 file4 file5
+	graph export "`var' by month by survey.png", width(6000) replace
+	
+	putdocx paragraph, halign(left)
+	putdocx text ("`var' by month by survey")
+	putdocx image "`var' by month by survey.png", linebreak(1)
+
+	local ExportPath "C:/TEMP/Seasonality"
+	local FileName "Comp Feed Seasonality.docx"
+	putdocx save "`ExportPath'/`FileName'", append
 }
-* A4 size
-graph combine isssf mdd mmf_all  dairy vita_fruit leafy_green, xsize(11.75) ysize(7) iscale(.5) name(comb, replace)
-graph close isssf mdd mmf_all  dairy vita_fruit leafy_green
-graph export "CF indicators by month by survey.png", width(6000) replace
 
-local ExportPath "C:/TEMP/Seasonality"
-local FileName "Comp Feed Seasonality.docx"
-putdocx save "`ExportPath'/`FileName'", append
 
 
 
@@ -507,9 +580,8 @@ local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
 
-local DepVars = "isssf mdd egg_meat dairy vita_fruit leafy_green"
-local DepVars = "egg_meat dairy vita_fruit leafy_green"
-* mmf_all
+// local DepVars = "mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all egg_meat carb leg_nut bread leafy_green vita_fruit"
+local DepVars = "isssf mdd mmf_bf egg_meat carb leg_nut bread leafy_green vita_fruit"
 
 foreach var of varlist `DepVars' {
 	
@@ -547,33 +619,202 @@ foreach var of varlist `DepVars' {
 	putdocx save "`ExportPath'/`FileName'", append
 }
 
-
-* Trend of vita_fruit evident in NFHS-3 unweighted.  Check weighted and adjusted
-
-
-
+* Some vars do not show clear seasonal trend but sig differences by month by survey
+* Egg & Meat - driven by early survey
+* Dairy
 
 
+* By REGION
+* Analysis of interaction between month and round
+local ContVars ib12.int_month i.region i.rururb i.wi i.mum_educ i.mum_work  ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
+local DepVars = "vita_fruit"
+
+foreach var of varlist `DepVars' {
+	
+	* Code below uses data available from dummy==x
+	forval x = 1/5 {
+		logit `var' `ContVars' [pw = national_wgt] if round==`x' 
+		margins int_month#round, saving(`var'_round`x', replace)
+		local RoundValueLabel : value label round
+		local GraphLabel: label `RoundValueLabel' `x'
+		marginsplot, title("`GraphLabel'") ytitle("Proportion") name(file`x', replace) 
+	}
+
+	graph combine file1 file2 file3 file4 file5, xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
+	graph close file1 file2 file3 file4 file5
+	graph export "`var' by month by survey.png", width(6000) replace
+	
+	putdocx begin, font("Calibri") 
+	putdocx pagebreak
+	putdocx paragraph, halign(left)
+	putdocx text ("`var' by month by survey")
+	putdocx image "`var' by month by survey.png", linebreak(1)
+
+	local ExportPath "C:/TEMP/Seasonality"
+	local FileName "Comp Feed Seasonality.docx"
+	putdocx save "`ExportPath'/`FileName'", append
+}
 
 
 
-// marginsplot yaxis
-// 	ylab(0.08(.02)0.22) yscale(range(0.08 0.22))
 
-* For Excel Graph
-* see exported data in ebf_roundX
+
+
+* Trend of vita_fruit evident in NFHS-3 weighted & unadjusted.  
+tab  int_month vita_fruit [aw = national_wgt] if round==1, row
+gen vita_fruit_x = vita_fruit*100
+graph bar (mean) vita_fruit_x [aw = national_wgt] if round==1, over(int_month) 
+
+* With Margins adjustment for month of data collection - same trend found
+logit vita_fruit ib12.int_month [pw = national_wgt] if round==1
+margins int_month
+marginsplot
+
+* The state covariate in the control variables is reversing the trend in NFHS-3.
+* replacement of state with region shows seasonal trend
+local ContVars ib12.int_month i.region i.rururb i.wi i.mum_educ i.mum_work  ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+logit vita_fruit `ContVars' [pw = national_wgt] if round==1
+margins int_month
+marginsplot
+
+* What is difference between state in NFHS-3 and 4 & 5 ?
+tabulate state int_month if round==3
+cap drop counts
+// bysort state int_month: egen counts =count(one) if round==1
+bysort state int_month: egen counts =count(one) if round==3
+scatter state int_month [w=counts*0.5] , msymbol(circle_hollow)
+* District level representation demands more sample in larger states and less impact of weights
+
+
+* For data to include in Excel Trend Graph
+* see exported data in var_roundX
 
 * NFHS-5
 * start 6 2019, mid   5 2020, end   5 202
 
 
 
-* Feeding Egg & Meat - driven by early survey? - put in Annex
-
-	
-1
+* dependent variables
+* isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all egg_meat carb leg_nut bread leafy_green vita_fruit
 
 
+* Variables that represent data from date of data collection
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+
+logit mdd `ContVars' [pw = national_wgt] 
+margins int_month
+pwcompare int_month, effects sort mcompare(sidak)
+
+
+// ------------------------------------------------------------------------------
+//              |                              Sidak                Sidak
+//              |   Contrast   Std. err.      z    P>|z|     [95% conf. interval]
+// -------------+----------------------------------------------------------------
+* isssf
+ Oct vs Aug  |  -.4742758   .1302143    -3.64   0.018    -.9119139   -.0366376
+ Nov vs Aug  |  -.7076406   .1536165    -4.61   0.000    -1.223931   -.1913498
+ Dec vs Aug  |  -.5580483   .1260824    -4.43   0.001    -.9817994   -.1342972
+
+* mdd
+ Mar vs Jan  |   -.163935   .0368515    -4.45   0.001    -.2877894   -.0400805
+ Apr vs Jan  |  -.1986808   .0438985    -4.53   0.000    -.3462197    -.051142
+ Jun vs Jan  |   -.246336    .046475    -5.30   0.000    -.4025341    -.090138
+ Aug vs Jan  |  -.2095673   .0522344    -4.01   0.004    -.3851223   -.0340124
+ Sep vs Jan  |  -.1993607   .0502256    -3.97   0.005    -.3681645    -.030557
+ Oct vs Jan  |  -.2895812   .0552258    -5.24   0.000    -.4751899   -.1039725
+ Oct vs Feb  |  -.1779109   .0526923    -3.38   0.047    -.3550047    -.000817 
+ Jul vs Jun  |   .1765761   .0458799     3.85   0.008      .022378    .3307741
+ Oct vs Jul  |  -.2198212    .054595    -4.03   0.004      -.40331   -.0363325
+ Dec vs Oct  |   .2040973   .0605449     3.37   0.048     .0006115    .4075831
+
+* mmf_bf
+ Oct vs Jan  |   .1947537   .0524793     3.71   0.014     .0183755    .3711318
+ Apr vs Feb  |   .1427144   .0321866     4.43   0.001     .0345382    .2508907
+ Jun vs Feb  |   .1445441   .0355784     4.06   0.003     .0249684    .2641198
+ Jul vs Feb  |   .1588616   .0363639     4.37   0.001     .0366461    .2810772
+ May vs Feb  |   .1712972   .0358517     4.78   0.000     .0508029    .2917916
+ Aug vs Feb  |   .1903868   .0452434     4.21   0.002      .038328    .3424456
+ Sep vs Feb  |   .2305752   .0437099     5.28   0.000     .0836702    .3774802
+ Oct vs Feb  |   .2830762   .0502495     5.63   0.000     .1141924      .45196 
+ May vs Mar  |   .1326993    .035095     3.78   0.010     .0147484    .2506502
+ Sep vs Mar  |   .1919773   .0441941     4.34   0.001     .0434448    .3405097
+ Oct vs Mar  |   .2444782   .0506671     4.83   0.000     .0741909    .4147656
+
+* mmf_nobf
+None
+* min_milk_freq_nbf
+None
+* mmf_all
+* driven by mmf_bf
+
+* egg_meat
+ Jun vs Jan  |   -.325737   .0523798    -6.22   0.000    -.5017807   -.1496932
+ Aug vs Jan  |  -.2157781   .0568781    -3.79   0.010    -.4069402    -.024616
+ Sep vs Jan  |  -.2067607    .054472    -3.80   0.010    -.3898359   -.0236855  
+ Oct vs Jan  |   -.211089   .0577469    -3.66   0.017    -.4051708   -.0170071
+ 
+ Jun vs Feb  |  -.2473868   .0481652    -5.14   0.000    -.4092656    -.085508
+ Dec vs Feb  |   .1879838    .050331     3.73   0.012     .0188259    .3571417
+ 
+ Jun vs Mar  |  -.2072324   .0469079    -4.42   0.001    -.3648854   -.0495794
+ Dec vs Mar  |   .2281381   .0523361     4.36   0.001     .0522414    .4040348
+ 
+ Dec vs Apr  |   .2761251   .0599982     4.60   0.000     .0744767    .4777734
+ Jun vs May  |  -.1975543   .0504816    -3.91   0.006    -.3672184   -.0278903
+ Dec vs May  |   .2378162   .0597742     3.98   0.005     .0369206    .4387119
+ 
+ Jul vs Jun  |   .1915589   .0505238     3.79   0.010     .0217531    .3613646
+ Nov vs Jun  |   .2905348   .0721064     4.03   0.004     .0481918    .5328777
+ Dec vs Jun  |   .4353706   .0598583     7.27   0.000     .2341922    .6365489
+ 
+ Dec vs Jul  |   .2438117   .0562997     4.33   0.001     .0545936    .4330298
+ Dec vs Aug  |   .3254117    .062037     5.25   0.000      .116911    .5339124
+ Dec vs Sep  |   .3163943   .0599104     5.28   0.000      .115041    .5177476
+ Dec vs Oct  |   .3207225   .0631358     5.08   0.000      .108529     .532916
+ 
+*carb 
+* driven by bread
+
+*leg_nut 
+ Feb vs Jan  |  -.1973276   .0310362    -6.36   0.000    -.3016374   -.0930178
+ Mar vs Jan  |  -.2194427   .0346774    -6.33   0.000    -.3359903   -.1028952
+ Apr vs Jan  |  -.2740063   .0432736    -6.33   0.000    -.4194448   -.1285677
+ May vs Jan  |  -.2566528   .0477654    -5.37   0.000     -.417188   -.0961176
+ Jun vs Jan  |  -.3444443   .0470733    -7.32   0.000    -.5026534   -.1862352
+
+*bread 
+Driven by one outlier in August
+
+*leafy_green 
+ Jun vs Jan  |  -.2134515   .0381972    -5.59   0.000    -.3418285   -.0850744
+ Jul vs Jan  |  -.2743396   .0388525    -7.06   0.000    -.4049192   -.1437601
+ Aug vs Jan  |   -.266855   .0457171    -5.84   0.000    -.4205059   -.1132041
+ Sep vs Jan  |  -.2271553   .0435624    -5.21   0.000    -.3735646   -.0807461 
+ Oct vs Jan  |  -.2824013   .0488954    -5.78   0.000    -.4467342   -.1180685
+
+*vita_fruit
+ Mar vs Jan  |   .2553908   .0403868     6.32   0.000     .1196544    .3911272
+ Apr vs Jan  |   .3890403   .0464735     8.37   0.000     .2328472    .5452333
+ May vs Jan  |   .7736428   .0484042    15.98   0.000     .6109608    .9363247
+ Jun vs Jan  |   1.093174    .045551    24.00   0.000     .9400811    1.246266
+ Jul vs Jan  |    .892022   .0457121    19.51   0.000      .738388    1.045656 
+ Aug vs Jan  |   .3158437   .0571951     5.52   0.000     .1236162    .5080712
+ Sep vs Jan  |   .1951492   .0552251     3.53   0.027     .0095428    .3807555
+ 
+
+ 
+ 
+
+
+
+ 
 * FOR ANNEXES
 
 
@@ -602,6 +843,7 @@ foreach var of varlist `DepVars' {
 	putdocx image ebf_month.tif, linebreak(1)
 
 }
+
 * A4 size
 graph combine sumfoodgrp_nm freq_solids_nm , xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
 graph close sumfoodgrp_nm freq_solids_nm
@@ -642,7 +884,9 @@ version 16: table region [pw = regional_wgt] , c(mean ebf_x n ebf_x) format(%9.1
 // marginsplot, title("Exclusive breastfeeding by month of data collection by region") ///
 // 		ytitle("Proportion") ylab(0(.1)0.8) yscale(range(0.0 0.8)) 
 
-		
+
+
+* First three regions		
 * Margins with region==`x'
 
 local ContVars ib12.int_month##i.region i.rururb i.wi i.mum_educ i.mum_work  ///
@@ -932,5 +1176,21 @@ END
  local Obs =cond(`r(N)'<=1,"-", string(`r(N)'))
  di "`Obs'" 
 
+
+
+
+* Merge graphs together
+graph combine graph1 graph2 , xsize(6.5) ysize(2.7) iscale(.8) name(comb, replace)
+graph close ebf_unadj_adj_mar water_unadj_adj_mar 
+graph export "X&Y.png", width(6000) replace
+
+* Add combomarginsplot to word file
+putdocx begin, font("Calibri") 
+putdocx pagebreak
+putdocx paragraph, halign(left)
+putdocx image X.tif, linebreak(1)
+putdocx image Y.tif, linebreak(1)
+
+putdocx save "`ExportPath'/`FileName'", append
 
 
