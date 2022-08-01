@@ -256,9 +256,6 @@ foreach var of varlist `DepVars' {
 putexcel save
 
 
-
-
-
 * Analysis
 * What are the most appropriate covariates? 
 
@@ -285,80 +282,16 @@ putexcel G2 = "NFHS-5"
 local RowNum = 4
 	
 foreach var of varlist `ContVars' {
-	tabulate `var' round [aw = national_wgt] if agemos>=6 & agemos<=23, col matcell(cell) matrow(row)
+	tabulate `var' round [aw = national_wgt] if agemos>=6 & agemos<24, col matcell(cell) matrow(row)
 	putexcel C`RowNum' = matrix(cell), nformat(##.0)
 	local RowNum = `RowNum' + r(r) +1
 	di `RowNum'
 	}
 
 
-
-* Table 3
+* Table 3 
 * Tables for dependent variables, max / min / amplitude / statistical significance of monthly variation
-
-* Assumption, if there is no variation in pooled 5 survey data, then no variation in single survey dataset
-* Start Min Max Table 
-putexcel set min_max_table, replace
-putexcel A1 = "Table 3: Annual prevalence & standard deviation with monthly estimates of minimum, maximum and amplitude of feeding variables adjusted for socio-demographic variation, India Surveys 2005-2021"
-putexcel A2 = "Var"
-putexcel B2 = "Prevalence"
-putexcel C2 = "SD"
-putexcel D2 = "Min"
-putexcel E2 = "Max"
-putexcel F2 = "Amp"
-putexcel G2 = "N"
-
-local DepVars = "isssf mdd mmf_bf  mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg bread leafy_green potato vita_veg fortified_food yogurt vita_fruit meat organ fish"
-// local DepVars = "isssf"
-
-
-local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus  ///
-	i.inst_birth i.bord c.age_days c.age_days#c.age_days ///
-	i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
-
-local RowNum = 2
-
-foreach var of varlist `DepVars' {
-	di "`var'"
- 	local RowNum = `RowNum' +1
-	logit `var' `ContVars' [pw = national_wgt] if agemos>=6 & agemos<=23
-	margins 
-	* save r(table) to normal matrix
-	matrix output = r(table)
-	local temp = "`r(predict1_label)'"
-	local temp1 = substr("`temp'",4,.)
-	local var_name = subinstr("`temp1'",")","",.)
-	putexcel A`RowNum' = "`var_name'"
-	putexcel B`RowNum' = (output[1,1] * 100), nformat(0.0)  // mean one digit 
-	* Note SD is calculated as SD = SE * sqrt(N)
-	putexcel C`RowNum' = (output[2,1] * sqrt(`r(N)')), nformat(number_d2) // standard deviation two digits
-	putexcel G`RowNum' = `r(N)', nformat(#,###) 
-
-	margins int_month, saving(min_max_file, replace)
-	putexcel set margin_output, replace // replace this with stata margins output
-	* Add Matrix
-	putexcel A1 = matrix(r(table)'), names
-	* Add varname to Matrix
-	putexcel A1 = "`r(predict1_label)'"
-	putexcel save
-	import excel "C:\Temp\Junk\margin_output.xlsx", sheet("Sheet1") firstrow clear
-	sum b, meanonly
-	local min = r(min) *100
-	local max = r(max) *100
-	local amp = (`max'-`min')/2
-	putexcel set min_max_table, modify
-	putexcel D`RowNum' = `min', nformat(0.0)  		// min
-	putexcel E`RowNum' = `max', nformat(0.0) 	  	// max
-	putexcel F`RowNum' = `amp', nformat(number_d2)  // amplitude
-	putexcel save
-	use C:\Temp\Data\iycf_5surveys.dta, clear 
-}
-
-
-
-
-* Table 3 NO EXCEL FILES only putexcel
-* Tables for dependent variables, max / min / amplitude / statistical significance of monthly variation
+* Removed EXCEL FILES as temp calculation files.  Now only putexcel
 
 * Assumption, if there is no variation in pooled 5 survey data, then no variation in single survey dataset
 * Start Min Max Table 
@@ -375,8 +308,6 @@ putexcel H2 = "Stat sig variation"
 putexcel I2 = "N"
 
 local DepVars = "isssf mdd mmf_bf  mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg bread leafy_green potato vita_veg fortified_food yogurt vita_fruit meat organ fish"
-// local DepVars = "isssf"
-
 
 local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus  ///
 	i.inst_birth i.bord c.age_days c.age_days#c.age_days ///
@@ -387,7 +318,7 @@ local RowNum = 2
 foreach var of varlist `DepVars' {
 	di "`var'"
  	local RowNum = `RowNum' +1
-	logit `var' `ContVars' [pw = national_wgt] if agemos>=6 & agemos<=23
+	logit `var' `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
 	margins 
 	* save r(table) to normal matrix
 	matrix output = r(table)
@@ -461,7 +392,7 @@ local DepVars = "isssf mdd egg_meat dairy vita_fruit leafy_green"
 foreach var of varlist `DepVars' {
 
 	* No controls are applied for month of data collection 
-	logit `var' i.round  [pw = national_wgt] 
+	logit `var' i.round  [pw = national_wgt] if agemos>=6 & agemos<24
 	margins round, saving(file1, replace)
 
 	* Adjustments are applied using control variables for month of data collection 
@@ -509,9 +440,9 @@ putdocx save "`ExportPath'/`FileName'", replace
 
 
 
-
+* GRAPHS
 * ONE Plot adjusted estimates by month from pooled data in one graph
-* TWO Plot dependent variable for each survey in five graphs for five surveys
+* TWO Plot dependent variable for each survey in five graphs for each survey
 
 
 // local DepVars = "isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all egg_meat carb leg_nut bread leafy_green vita_fruit"
@@ -524,7 +455,7 @@ local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 * attention to include all socio-economic vars i.wi i.mum_educ i.mum_work ***
 
 foreach var of varlist `DepVars' {
-	logit `var' `ContVars' [pw = national_wgt] 
+	logit `var' `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
 	margins int_month, saving(`var'_month, replace)
 	marginsplot, title("`var'") ///
 		ytitle("Proportion")  /// ylab(0.5(.1)0.7) yscale(range(0.5 0.7))
@@ -548,7 +479,7 @@ foreach var of varlist `DepVars' {
 	
 	* Code below uses data available from dummy==x
 	forval x = 1/5 {
-		logit `var' `ContVars' [pw = national_wgt] if round==`x' 
+		logit `var' `ContVars' [pw = national_wgt] if round==`x' & agemos>=6 & agemos<24
 		margins int_month#round, saving(`var'_round`x', replace)
 		local RoundValueLabel : value label round
 		local GraphLabel: label `RoundValueLabel' `x'
@@ -587,7 +518,7 @@ foreach var of varlist `DepVars' {
 	
 	* Code below uses data available from dummy==x
 	forval x = 1/5 {
-		logit `var' `ContVars' [pw = national_wgt] if round==`x' 
+		logit `var' `ContVars' [pw = national_wgt] if round==`x' & agemos>=6 & agemos<24
 		margins int_month#round, saving(`var'_round`x', replace)
 		local RoundValueLabel : value label round
 		local GraphLabel: label `RoundValueLabel' `x'
@@ -636,7 +567,7 @@ foreach var of varlist `DepVars' {
 	
 	* Code below uses data available from dummy==x
 	forval x = 1/5 {
-		logit `var' `ContVars' [pw = national_wgt] if round==`x' 
+		logit `var' `ContVars' [pw = national_wgt] if round==`x' & if agemos>=6 & agemos<24
 		margins int_month#round, saving(`var'_round`x', replace)
 		local RoundValueLabel : value label round
 		local GraphLabel: label `RoundValueLabel' `x'
@@ -669,7 +600,7 @@ gen vita_fruit_x = vita_fruit*100
 graph bar (mean) vita_fruit_x [aw = national_wgt] if round==1, over(int_month) 
 
 * With Margins adjustment for month of data collection - same trend found
-logit vita_fruit ib12.int_month [pw = national_wgt] if round==1
+logit vita_fruit ib12.int_month [pw = national_wgt] if round==1 & agemos>=6 & agemos<24
 margins int_month
 marginsplot
 
@@ -678,7 +609,7 @@ marginsplot
 local ContVars ib12.int_month i.region i.rururb i.wi i.mum_educ i.mum_work  ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
-logit vita_fruit `ContVars' [pw = national_wgt] if round==1
+logit vita_fruit `ContVars' [pw = national_wgt] if round==1 & agemos>=6 & agemos<24
 margins int_month
 marginsplot
 
@@ -708,7 +639,7 @@ local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
 
-logit mdd `ContVars' [pw = national_wgt] 
+logit mdd `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
 margins int_month
 pwcompare int_month, effects sort mcompare(sidak)
 
@@ -831,7 +762,7 @@ local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 * attention to include all socio-economic vars i.wi i.mum_educ i.mum_work ***
 
 foreach var of varlist `DepVars' {
-	reg `var' `ContVars' [pw = national_wgt] 
+	reg `var' `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
 	margins int_month, saving(`var'_month, replace)
 	marginsplot, title("`var' by month of data collection (pooled)") ///
 		ytitle("Proportion")  /// ylab(0.5(.1)0.7) yscale(range(0.5 0.7))
@@ -943,7 +874,7 @@ local ContVars ib12.int_month##i.rururb i.state i.wi i.mum_educ i.mum_work  ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
 
-logit ebf_x `ContVars' [pw = national_wgt] 
+logit ebf_x `ContVars' [pw = national_wgt]  if agemos>=6 & agemos<24
 	
 forval x = 1/2 {
 	margins int_month, at(rururb==`x') saving(file_`x', replace)
@@ -964,7 +895,7 @@ local ContVars ib12.int_month##i.mum_work  i.state i.rururb i.wi i.mum_educ   //
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
 
-logit ebf_x `ContVars' [pw = national_wgt] 
+logit ebf_x `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
 	
 forval x = 0/1 {
 	margins int_month, at(mum_work==`x') saving(file_`x', replace)
@@ -984,7 +915,7 @@ local ContVars ib12.int_month##i.wi i.state i.rururb i.mum_educ i.mum_work  ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
 	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
 
-logit ebf_x `ContVars' [pw = national_wgt] 
+logit ebf_x `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
 	
 forval x = 1/5 {
 	margins int_month, at(wi==`x') saving(file_`x', replace)
@@ -1008,7 +939,7 @@ local ContVars ib12.int_month##i.agemos i.state i.rururb i.wi i.mum_educ i.mum_w
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord      ///
 	i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
 
-logit ebf_x `ContVars' [pw = national_wgt] 
+logit ebf_x `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
 	
 forval x = 0/5 {
 	margins int_month, at(agemos==`x') saving(file_`x', replace)
