@@ -123,7 +123,6 @@ tab  freq_solids_nm round if agemos>=6 & agemos<24, col
 * indicators with extreme small sample for monthly estimates
 
 local DepVars = "isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg bread leafy_green potato vita_veg fortified_food yogurt vita_fruit meat organ fish"
-// local DepVars = "mdd"
 
 foreach var of varlist `DepVars' {
 	forvalues num_round =1/5 {
@@ -136,8 +135,10 @@ foreach var of varlist `DepVars' {
 }
 
 * Double check corrections
-version 16: table int_month round, c(n mdd)
-
+local DepVars = "isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg bread leafy_green potato vita_veg fortified_food yogurt vita_fruit meat organ fish"
+foreach var of varlist `DepVars' {
+	version 16: table int_month round, c(n `var')
+} 
 
 cap drop agegrp_3
 gen agegrp_3 = floor(agemos/6) if agemos>=6 & agemos<24
@@ -217,7 +218,7 @@ foreach var of varlist sumfoodgrp freq_solids milk_feeds feeds {
 * Table 1
 * Table for prevalence estimate from complementary feeding (dependent) variables
 
-local DepVars currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg  fortified_food meat bread potato vita_veg leafy_green vita_fruit organ fish yogurt semisolid any_solid_semi_food mdd mmf_bf  mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv
+local DepVars = "isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg bread leafy_green potato vita_veg fortified_food yogurt vita_fruit meat organ fish"
 * DepVars not including sumfoodgrp feeds
 
 putexcel set CF_prev_table, replace
@@ -329,7 +330,7 @@ foreach var of varlist `DepVars' {
 	putexcel B`RowNum' = (output[1,1] * 100), nformat(0.0)  // mean one digit 
 	* Note SD is calculated as SD = SE * sqrt(N)
 	putexcel C`RowNum' = (output[2,1] * sqrt(`r(N)')), nformat(number_d2) // standard deviation two digits
-	putexcel G`RowNum' = `r(N)', nformat(#,###) 
+	putexcel I`RowNum' = `r(N)', nformat(#,###) // weighted N from logit
 
 	margins int_month, saving(min_max_file, replace)
 	preserve
@@ -343,7 +344,7 @@ foreach var of varlist `DepVars' {
 	putexcel set min_max_table, modify
 	putexcel D`RowNum' = `min', nformat(0.0)  		// min
 	putexcel E`RowNum' = `max', nformat(0.0) 	  	// max
-	putexcel I`RowNum' = `amp', nformat(number_d2)  // amplitude
+	putexcel F`RowNum' = `amp', nformat(number_d2)  // amplitude
 	putexcel save
 	restore
 }
@@ -445,8 +446,8 @@ putdocx save "`ExportPath'/`FileName'", replace
 * TWO Plot dependent variable for each survey in five graphs for each survey
 
 
-// local DepVars = "isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all egg_meat carb leg_nut bread leafy_green vita_fruit"
-local DepVars = "carb leg_nut bread leafy_green vita_fruit"
+// local DepVars = "isssf mdd mmf_all mad_all zero_fv leg_nut dairy bread leafy_green vita_fruit"
+
 
 local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
@@ -551,8 +552,6 @@ foreach var of varlist `DepVars' {
 }
 
 * Some vars do not show clear seasonal trend but sig differences by month by survey
-* Egg & Meat - driven by early survey
-* Dairy
 
 
 * By REGION
