@@ -388,7 +388,9 @@ putdocx begin, font("Calibri")
 * mmf_all does not have NFHS-3 so need to create different code
 
 
-local DepVars = "isssf mdd egg_meat dairy vita_fruit leafy_green"
+local DepVars = "isssf mdd mmf_bf egg_meat dairy leg_nut vita_fruit leafy_green"
+local DepVars = "mmf_bf leg_nut"
+
 
 foreach var of varlist `DepVars' {
 
@@ -421,7 +423,7 @@ foreach var of varlist `DepVars' {
  			, ///
  		   title("`var'") ///
  		   xlabel(1(1)5, valuelabel ) xtitle(" ")  /// ylabel(0.4(0.1)0.7)
- 		   ytitle(Proportion) legend(pos(5) ring(0) col(1)  region(lstyle(none)) ///
+ 		   ytitle(Proportion) legend(pos(3) ring(0) col(1)  region(lstyle(none)) ///
  		   order(1 "Unadjusted - Midpoint" 4 "Adjusted - Midpoint" )) scheme(s1mono) ///
  		   graphregion(color(white)) bgcolor(white) 
  	graph export `var'.tif, as(tif) replace
@@ -435,19 +437,17 @@ foreach var of varlist `DepVars' {
 
 local ExportPath "C:/TEMP/Seasonality"
 local FileName "Comp Feed Seasonality.docx"
-putdocx save "`ExportPath'/`FileName'", replace
+putdocx save "`ExportPath'/`FileName'", append
 	
-
-
 
 
 * GRAPHS
 * ONE Plot adjusted estimates by month from pooled data in one graph
 * TWO Plot dependent variable for each survey in five graphs for each survey
 
-
-// local DepVars = "isssf mdd mmf_all mad_all zero_fv leg_nut dairy bread leafy_green vita_fruit"
-
+local DepVars = "isssf mdd egg_meat leg_nut dairy leafy_green vita_fruit"
+// local DepVars = "mmf_all"
+// forval x = 2/5 {  if using mmf_all
 
 local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
 	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
@@ -480,6 +480,7 @@ foreach var of varlist `DepVars' {
 	
 	* Code below uses data available from dummy==x
 	forval x = 1/5 {
+	// forval x = 2/5 {  // if using mmf_all
 		logit `var' `ContVars' [pw = national_wgt] if round==`x' & agemos>=6 & agemos<24
 		margins int_month#round, saving(`var'_round`x', replace)
 		local RoundValueLabel : value label round
@@ -566,7 +567,7 @@ foreach var of varlist `DepVars' {
 	
 	* Code below uses data available from dummy==x
 	forval x = 1/5 {
-		logit `var' `ContVars' [pw = national_wgt] if round==`x' & if agemos>=6 & agemos<24
+		logit `var' `ContVars' [pw = national_wgt] if round==`x' & agemos>=6 & agemos<24
 		margins int_month#round, saving(`var'_round`x', replace)
 		local RoundValueLabel : value label round
 		local GraphLabel: label `RoundValueLabel' `x'
