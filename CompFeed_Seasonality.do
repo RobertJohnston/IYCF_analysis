@@ -85,7 +85,6 @@ No specific question asked on plantain
 6. eggs;
 7. vitamin-A rich fruits and vegetables; and
 8. other fruits and vegetables.
-
 */
 
 * if vars are not represented by each survey - like X Y Z, They are not included
@@ -94,7 +93,7 @@ set scheme s1mono
 
 * Include paths 
 // include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
-include "C:\Robert\IYCF Analysis Samsung\robert_paths.do"
+include "D:\IYCF Analysis Samsung\robert_paths.do"
 
 * Load Data
 use iycf_5surveys.dta, clear 
@@ -120,7 +119,7 @@ gen freq_solids_nm = freq_solids if freq_solids<8
 tab freq_solids_nm if agemos>=6 & agemos<24, m 
 tab  freq_solids_nm round if agemos>=6 & agemos<24, col
 
-* indicators with extreme small sample for monthly estimates
+* set to missing all indicators with extreme small sample for monthly estimates
 
 local DepVars = "isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg bread leafy_green potato vita_veg fortified_food yogurt vita_fruit meat organ fish"
 
@@ -147,6 +146,10 @@ la val agegrp_3 agegrp
 tab agemos agegrp_3, m 
 graph bar (count) one if agemos>=4 & agemos<28, over(agemos) 
 * slight evidence of age preference for whole numbers 
+
+cd
+
+stop - will save below in wrong place. 
 
 * CLEANED Data
 save iycf_5surveys_cleaned.dta, replace 
