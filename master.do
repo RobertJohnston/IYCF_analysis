@@ -140,14 +140,17 @@ replace bottle = 0 if _n == 51556
 * add broth to NFHS-3
 replace broth = 0 if _n == 1
 
+* Birth order
 recode bord (5/20=5)
 la def bord 5 "5+"
 la val bord bord
 
-tab  hh_mem round, col
+* Number of hh members
 replace hh_mem = 12 if hh_mem>12 & hh_mem!=.
 la def hh_mem  12 "12+"
 la val hh_mem  hh_mem
+tab hh_mem round, col
+version 16: table round, c(mean hh_mem)
 
 * introduction of complementary foods
 tab agemos any_solid_semi_food

@@ -32,6 +32,8 @@ gen hh_num = v002
 
  * Total number of HH members
 gen hh_mem = v136
+la var hh_mem "Total number of HH members"
+
 
 gen one=1
 lab define no_yes 0 "No" 1 "Yes"
