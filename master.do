@@ -144,6 +144,11 @@ recode bord (5/20=5)
 la def bord 5 "5+"
 la val bord bord
 
+tab  hh_mem round, col
+replace hh_mem = 12 if hh_mem>12 & hh_mem!=.
+la def hh_mem  12 "12+"
+la val hh_mem  hh_mem
+
 * introduction of complementary foods
 tab agemos any_solid_semi_food
 // 2.1. Introduction of solid, semi-solid or soft foods 6–8 months (ISSSF) 
