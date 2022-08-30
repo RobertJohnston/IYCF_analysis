@@ -18,11 +18,13 @@ version 16
 * Please note household data does not include IYCF
 
 
-include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
-// include "dnyaneshwar_paths.do"
+// include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
+include "D:\IYCF Analysis Samsung\robert_paths.do"
 
 * Open RSOC
 use `RSOC', clear
+
+
 
 
 * 29 states included 
@@ -133,6 +135,12 @@ tab q1a ageyears
 // Kerala
 // Tamil Nadu
 
+
+* Total number of HH members
+// NFHS-3 v136
+// RSOC q14_1
+// CNNS f_size
+gen hh_mem = q14_1
 
 * IYCF data collected only for children under 3 years of age
 drop if age_days> 1095  // 3 years = 1096 days 
@@ -1102,7 +1110,7 @@ keep psu hh_num one int_date birthday birthmonth birthyear dateofbirth age_days 
 	freq_formula freq_other_milk milk_feeds feeds mmf_nobf min_milk_freq_nbf ///
 	mmf_all mixed_milk mad_all egg_meat zero_fv sugar_bev unhealthy_food ///
 	lbw cat_birth_wt anc4plus csection earlyanc mum_educ caste rururb wi wi_s state ///
-	sex national_wgt regional_wgt state_wgt round ebf_denom mum_work inst_birth bord 
+	sex national_wgt regional_wgt state_wgt round ebf_denom mum_work inst_birth bord hh_mem
 
 
 * Save data with name of survey

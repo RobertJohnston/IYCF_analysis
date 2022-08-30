@@ -8,8 +8,8 @@ version 16
 * LBW
 * Mothers education 
  
-include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
-// include "dnyaneshwar_paths.do"
+// include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
+include "D:\IYCF Analysis Samsung\robert_paths.do"
 
 use "CNNS_04_regional_wgts", clear
 rename caseid case_id
@@ -32,6 +32,11 @@ lab define no_yes 0 "No" 1 "Yes"
 
 gen psu = psu_no_ov
 gen hh_num = hh_no
+
+
+* Total number of HH members
+// CNNS f_size
+gen hh_mem = f_size
 
 * CHECK FINAL N of CNNS 
 tab result
@@ -1008,7 +1013,7 @@ keep psu hh_num one int_date birthday birthmonth birthyear dateofbirth age_days 
 	freq_formula freq_yogurt milk_feeds feeds mmf_nobf min_milk_freq_nbf ///
 	mmf_all mixed_milk mad_all egg_meat zero_fv sugar_bev unhealthy_food ///
 	lbw cat_birth_wt anc4plus csection earlyanc mum_educ caste rururb wi wi_s state ///
-	sex national_wgt state_wgt round ebf_denom mum_work inst_birth bord regional_wgt regional_bio_wgt
+	sex national_wgt state_wgt round ebf_denom mum_work inst_birth bord regional_wgt regional_bio_wgt hh_mem
 
 // 	regional_wgt regional_bio_wgt 
 

@@ -17,8 +17,8 @@
 
 version 16 
 
-include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
-// include "dnyaneshwar_paths.do"
+// include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
+include "D:\IYCF Analysis Samsung\robert_paths.do"
 
 * Open NFHS 4
 use `NFHS4', clear
@@ -32,7 +32,8 @@ gen psu = v001
 // scatter v024 psu // psu is state specific - no duplication
 gen hh_num = v002
 
- 
+ * Total number of HH members
+gen hh_mem = v136
 
 * Do NOT exclude dead children. 
 // Note: Table is based on last-born children born in the 2 years preceding the survey regardless of whether the children are living or dead at
@@ -1098,7 +1099,7 @@ keep psu hh_num one int_date birthday birthmonth birthyear dateofbirth age_days 
 	freq_formula freq_yogurt milk_feeds feeds mmf_nobf min_milk_freq_nbf ///
 	mmf_all mixed_milk mad_all egg_meat zero_fv sugar_bev unhealthy_food ///
 	lbw cat_birth_wt anc4plus csection earlyanc mum_educ caste rururb wi wi_s state ///
-	sex national_wgt regional_wgt state_wgt round ebf_denom mum_work inst_birth bord 
+	sex national_wgt regional_wgt state_wgt round ebf_denom mum_work inst_birth bord hh_mem
 
 
 		

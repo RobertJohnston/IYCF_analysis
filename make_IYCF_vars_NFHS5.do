@@ -16,8 +16,8 @@
 
 
 
-include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
-// include "dnyaneshwar_paths.do"
+// include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
+include "D:\IYCF Analysis Samsung\robert_paths.do"
 
 * Open NFHS 5
 use `NFHS5', clear
@@ -29,6 +29,9 @@ gen psu = v001  //
 * scatter v024 psu // psu is state specific - no duplication
 
 gen hh_num = v002
+
+ * Total number of HH members
+gen hh_mem = v136
 
 gen one=1
 lab define no_yes 0 "No" 1 "Yes"
@@ -1410,7 +1413,7 @@ keep psu hh_num int_date birthday birthmonth birthyear dateofbirth age_days agem
 	freq_formula freq_yogurt milk_feeds feeds mmf_nobf min_milk_freq_nbf mmf_all mixed_milk mad_all ///
 	egg_meat zero_fv sugar_bev unhealthy_food birth_weight cat_birth_wt lbw earlyanc anc4plus csection ///
 	mum_educ_years mum_educ caste rururb wi wi_s sex diar fever ari state birth_place /// 
-	inst_birth anc_BFcounsel pnc_child_visit pnc_assistance round district b19 b9 caseid midx mum_work inst_birth bord 
+	inst_birth anc_BFcounsel pnc_child_visit pnc_assistance round district b19 b9 caseid midx mum_work inst_birth bord hh_mem
 
 
 		

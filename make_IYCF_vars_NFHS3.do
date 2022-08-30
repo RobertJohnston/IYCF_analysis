@@ -14,8 +14,8 @@ clear
 version 16
 
 
-include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
-// include "dnyaneshwar_paths.do"
+// include "C:\Users\stupi\OneDrive - UNICEF\1 UNICEF Work\1 moved to ECM\IIT-B\IYCF\analysis\robert_paths.do"
+include "D:\IYCF Analysis Samsung\robert_paths.do"
 
 * Open NFHS 3
 use `NFHS3', clear
@@ -24,11 +24,12 @@ gen one=1
 
 lab define no_yes 0 "No" 1 "Yes"
 
+* Survey IDs
 gen psu = v001
 gen hh_num = v002
 
-
-
+* Total number of HH members
+gen hh_mem = v136
 
 
 * Do NOT exclude dead children. 
@@ -1062,8 +1063,8 @@ keep psu hh_num one int_date birthday birthmonth birthyear dateofbirth age_days 
 	age_cbf cont_bf cont_bf_12_23 mdd freq_solids mmf_bf mad_bf egg ///
 	egg_meat zero_fv sugar_bev unhealthy_food birth_weight cat_birth_wt lbw earlyanc anc4plus ///
 	csection mum_educ_years mum_educ caste rururb wi wi_s national_wgt regional_wgt state_wgt /// 
-	sex diar fever ari state round ebf_denom mum_work inst_birth bord 
-
+	sex diar fever ari state round ebf_denom mum_work inst_birth bord hh_mem
+ 
 	
 * Save data with name of survey
 save iycf_NFHS3, replace 
