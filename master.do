@@ -146,11 +146,14 @@ la def bord 5 "5+"
 la val bord bord
 
 * Number of hh members
-replace hh_mem = 12 if hh_mem>12 & hh_mem!=.
-la def hh_mem  12 "12+"
+replace hh_mem = 10 if hh_mem>10 & hh_mem!=.
+replace hh_mem = 2 if hh_mem<2
+la def hh_mem  10 "10+"
 la val hh_mem  hh_mem
 tab hh_mem round, col
 version 16: table round, c(mean hh_mem)
+* test sample size for IYCF ages 
+tab hh_mem round if agemos>=6 & agemos<24
 
 * introduction of complementary foods
 tab agemos any_solid_semi_food
