@@ -85,7 +85,10 @@ No specific question asked on plantain
 6. eggs;
 7. vitamin-A rich fruits and vegetables; and
 8. other fruits and vegetables.
+
 */
+
+
 
 * if vars are not represented by each survey - like X Y Z, They are not included
 
@@ -121,7 +124,7 @@ tab  freq_solids_nm round if agemos>=6 & agemos<24, col
 
 * set to missing all indicators with extreme small sample for monthly estimates
 
-local DepVars = "isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg bread leafy_green potato vita_veg fortified_food yogurt vita_fruit meat organ fish"
+local DepVars = "isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv currently_bf carb leg_nut dairy milk formula all_meat egg vita_fruit_veg fruit_veg bread leafy_green potato vita_veg fortified_food yogurt vita_fruit meat organ fish"
 
 foreach var of varlist `DepVars' {
 	forvalues num_round =1/5 {
@@ -138,6 +141,8 @@ local DepVars = "isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all mad_all egg
 foreach var of varlist `DepVars' {
 	version 16: table int_month round, c(n `var')
 } 
+// This affected estimates from RSOC in June and November and estimates from NFHS-5 in May. 
+
 
 cap drop agegrp_3
 gen agegrp_3 = floor(agemos/6) if agemos>=6 & agemos<24
@@ -148,10 +153,7 @@ graph bar (count) one if agemos>=4 & agemos<28, over(agemos)
 * slight evidence of age preference for whole numbers 
 
 cd
-
-stop - will save below in wrong place. 
-
-* CLEANED Data
+* CLEANED Data saved in C:\Temp\Junk
 save iycf_5surveys_cleaned.dta, replace 
 * Open if not opened already
 use iycf_5surveys_cleaned.dta, clear 
@@ -170,9 +172,12 @@ use iycf_5surveys_cleaned.dta, clear
 * wi and mum_educ are considered categorical variables, as agegrp is considered categorical in stata manual
 
 local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
-	i.earlyanc i.csection i.inst_birth i.bord c.age_days c.age_days#c.age_days ///
-	i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 
+	
+test if any diff with addition of i.hh_mem
+	
+	
 // 2.1. Introduction of solid, semi-solid or soft foods 6–8 months (ISSSF) 
 // 2.2. Minimum dietary diversity 6–23 months (MDD) 
 // 2.3. Minimum meal frequency 6–23 months   (MMF) 
@@ -201,7 +206,7 @@ foreach var of varlist sumfoodgrp freq_solids milk_feeds feeds {
 * are there differences between estimates from data and survey reports? 
 * Reported results from survey reports
 
-// NFHS-3 REPORT  VAR 	
+// NFHS-3 REPORT   	
 // RSOC   REPORT  
 // NFHS-4 REPORT  
 // CNNS   REPORT  
@@ -263,16 +268,20 @@ putexcel save
 * Analysis
 * What are the most appropriate covariates? 
 
-local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus i.inst_birth ///
-	i.bord c.age_days c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+* added hh_mem 
+* removed inst_birth & cat_birth_wt
+
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 logit mad_all `ContVars' [pw = national_wgt] 
-* Pseudo R2 = 0.07
+
+
 
 
 * Table 2
 * Data by background variables (weighted estimates)
 
-local ContVars  mum_educ wi caste rururb anc4plus cat_birth_wt sex bord agegrp_3 diar fever ari mum_work 
+local ContVars mum_educ wi caste rururb anc4plus cat_birth_wt sex bord hh_mem agegrp_3 diar fever ari mum_work 
 
 putexcel set CF_background_vars, replace
 putexcel A1 = "Table 2: Percent distribution of background variables by survey, India Surveys 2005-2021"
@@ -311,11 +320,13 @@ putexcel G2 = "Proport- ional change"
 putexcel H2 = "Stat sig variation"
 putexcel I2 = "N"
 
-local DepVars = "isssf mdd mmf_bf  mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg bread leafy_green potato vita_veg fortified_food yogurt vita_fruit meat organ fish"
+local DepVars = "isssf mdd mmf_bf  mmf_nobf min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv currently_bf carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg bread leafy_green potato vita_veg fortified_food vita_fruit meat organ fish"
 
-local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus  ///
-	i.inst_birth i.bord c.age_days c.age_days#c.age_days ///
-	i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+* Do not include yogurt above. It is only individually present in 3 surveys.  Should analyse dairy instead. 
+* Dairy  - as per WHO/UNICEF 2020 is dairy products (milk, infant formula, yogurt, cheese)
+
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 
 local RowNum = 2
 
@@ -402,9 +413,8 @@ foreach var of varlist `DepVars' {
 	margins round, saving(file1, replace)
 
 	* Adjustments are applied using control variables for month of data collection 
-	local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus  ///
-		i.inst_birth i.bord c.age_days c.age_days#c.age_days ///
-		i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+	local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+		i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 
 	logit `var' `ContVars' [pw = national_wgt] 
 	* output by round of survey
@@ -448,14 +458,15 @@ putdocx save "`ExportPath'/`FileName'", append
 * ONE Plot adjusted estimates by month from pooled data in one graph
 * TWO Plot dependent variable for each survey in five graphs for each survey
 
-local DepVars = "isssf mdd egg_meat leg_nut dairy leafy_green vita_fruit"
-// local DepVars = "mmf_all"
+local DepVars = "isssf mdd egg_meat leg_nut dairy milk formula leafy_green vita_fruit"
+// local DepVars = "mmf_bf"
+// local DepVars = "mad_all"
+
 // forval x = 2/5 {  if using mmf_all
 
-local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
-
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
+	
 * attention to include all socio-economic vars i.wi i.mum_educ i.mum_work ***
 
 foreach var of varlist `DepVars' {
@@ -512,9 +523,8 @@ foreach var of varlist `DepVars' {
 * Combomarginsplot - joining five graphs onto one background
 
 * Analysis of interaction between month and round
-local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 
 // local DepVars = "mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all egg_meat carb leg_nut bread leafy_green vita_fruit"
 local DepVars = "isssf mdd mmf_bf egg_meat carb leg_nut bread leafy_green vita_fruit"
@@ -558,11 +568,13 @@ foreach var of varlist `DepVars' {
 * Some vars do not show clear seasonal trend but sig differences by month by survey
 
 
+
+
+
 * By REGION
 * Analysis of interaction between month and round
-local ContVars ib12.int_month i.region i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 
 local DepVars = "vita_fruit"
 
@@ -609,9 +621,9 @@ marginsplot
 
 * The state covariate in the control variables is reversing the trend in NFHS-3.
 * replacement of state with region shows seasonal trend
-local ContVars ib12.int_month i.region i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
+	
 logit vita_fruit `ContVars' [pw = national_wgt] if round==1 & agemos>=6 & agemos<24
 margins int_month
 marginsplot
@@ -637,14 +649,24 @@ scatter state int_month [w=counts*0.5] , msymbol(circle_hollow)
 * isssf mdd mmf_bf mmf_nobf min_milk_freq_nbf mmf_all egg_meat carb leg_nut bread leafy_green vita_fruit
 
 
-* Variables that represent data from date of data collection
-local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
 
-logit mdd `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
+
+* CHANGES  31 August
+
+
+* Variables that represent data from date of data collection
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
+	
+local DepVars = "mdd"
+// local DepVars = "vita_fruit"
+
+logit `DepVars' `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
 margins int_month
-pwcompare int_month, effects sort mcompare(sidak)
+marginsplot
+* Try using 99% confidence intervals to make test more robust. 
+pwcompare int_month, asobserved level(99) effects sort mcompare(bonferroni)
+
 
 
 // ------------------------------------------------------------------------------
@@ -652,67 +674,42 @@ pwcompare int_month, effects sort mcompare(sidak)
 //              |   Contrast   Std. err.      z    P>|z|     [95% conf. interval]
 // -------------+----------------------------------------------------------------
 * isssf
- Oct vs Aug  |  -.4742758   .1302143    -3.64   0.018    -.9119139   -.0366376
+Driven by one outlier in August
  Nov vs Aug  |  -.7076406   .1536165    -4.61   0.000    -1.223931   -.1913498
- Dec vs Aug  |  -.5580483   .1260824    -4.43   0.001    -.9817994   -.1342972
 
-* mdd
- Mar vs Jan  |   -.163935   .0368515    -4.45   0.001    -.2877894   -.0400805
+ * mdd
  Apr vs Jan  |  -.1986808   .0438985    -4.53   0.000    -.3462197    -.051142
  Jun vs Jan  |   -.246336    .046475    -5.30   0.000    -.4025341    -.090138
- Aug vs Jan  |  -.2095673   .0522344    -4.01   0.004    -.3851223   -.0340124
- Sep vs Jan  |  -.1993607   .0502256    -3.97   0.005    -.3681645    -.030557
  Oct vs Jan  |  -.2895812   .0552258    -5.24   0.000    -.4751899   -.1039725
- Oct vs Feb  |  -.1779109   .0526923    -3.38   0.047    -.3550047    -.000817 
- Jul vs Jun  |   .1765761   .0458799     3.85   0.008      .022378    .3307741
- Oct vs Jul  |  -.2198212    .054595    -4.03   0.004      -.40331   -.0363325
- Dec vs Oct  |   .2040973   .0605449     3.37   0.048     .0006115    .4075831
 
 * mmf_bf
- Oct vs Jan  |   .1947537   .0524793     3.71   0.014     .0183755    .3711318
- Apr vs Feb  |   .1427144   .0321866     4.43   0.001     .0345382    .2508907
- Jun vs Feb  |   .1445441   .0355784     4.06   0.003     .0249684    .2641198
- Jul vs Feb  |   .1588616   .0363639     4.37   0.001     .0366461    .2810772
  May vs Feb  |   .1712972   .0358517     4.78   0.000     .0508029    .2917916
- Aug vs Feb  |   .1903868   .0452434     4.21   0.002      .038328    .3424456
  Sep vs Feb  |   .2305752   .0437099     5.28   0.000     .0836702    .3774802
  Oct vs Feb  |   .2830762   .0502495     5.63   0.000     .1141924      .45196 
- May vs Mar  |   .1326993    .035095     3.78   0.010     .0147484    .2506502
- Sep vs Mar  |   .1919773   .0441941     4.34   0.001     .0434448    .3405097
  Oct vs Mar  |   .2444782   .0506671     4.83   0.000     .0741909    .4147656
 
 * mmf_nobf
 None
+
 * min_milk_freq_nbf
 None
 * mmf_all
 * driven by mmf_bf
 
 * egg_meat
+No relation with egg or meat
+
  Jun vs Jan  |   -.325737   .0523798    -6.22   0.000    -.5017807   -.1496932
- Aug vs Jan  |  -.2157781   .0568781    -3.79   0.010    -.4069402    -.024616
- Sep vs Jan  |  -.2067607    .054472    -3.80   0.010    -.3898359   -.0236855  
- Oct vs Jan  |   -.211089   .0577469    -3.66   0.017    -.4051708   -.0170071
- 
  Jun vs Feb  |  -.2473868   .0481652    -5.14   0.000    -.4092656    -.085508
- Dec vs Feb  |   .1879838    .050331     3.73   0.012     .0188259    .3571417
- 
- Jun vs Mar  |  -.2072324   .0469079    -4.42   0.001    -.3648854   -.0495794
- Dec vs Mar  |   .2281381   .0523361     4.36   0.001     .0522414    .4040348
- 
  Dec vs Apr  |   .2761251   .0599982     4.60   0.000     .0744767    .4777734
- Jun vs May  |  -.1975543   .0504816    -3.91   0.006    -.3672184   -.0278903
- Dec vs May  |   .2378162   .0597742     3.98   0.005     .0369206    .4387119
- 
- Jul vs Jun  |   .1915589   .0505238     3.79   0.010     .0217531    .3613646
- Nov vs Jun  |   .2905348   .0721064     4.03   0.004     .0481918    .5328777
  Dec vs Jun  |   .4353706   .0598583     7.27   0.000     .2341922    .6365489
- 
- Dec vs Jul  |   .2438117   .0562997     4.33   0.001     .0545936    .4330298
  Dec vs Aug  |   .3254117    .062037     5.25   0.000      .116911    .5339124
  Dec vs Sep  |   .3163943   .0599104     5.28   0.000      .115041    .5177476
  Dec vs Oct  |   .3207225   .0631358     5.08   0.000      .108529     .532916
- 
+
+*bread 
+Driven by one outlier in August
+
 *carb 
 * driven by bread
 
@@ -723,8 +720,6 @@ None
  May vs Jan  |  -.2566528   .0477654    -5.37   0.000     -.417188   -.0961176
  Jun vs Jan  |  -.3444443   .0470733    -7.32   0.000    -.5026534   -.1862352
 
-*bread 
-Driven by one outlier in August
 
 *leafy_green 
  Jun vs Jan  |  -.2134515   .0381972    -5.59   0.000    -.3418285   -.0850744
@@ -740,7 +735,7 @@ Driven by one outlier in August
  Jun vs Jan  |   1.093174    .045551    24.00   0.000     .9400811    1.246266
  Jul vs Jan  |    .892022   .0457121    19.51   0.000      .738388    1.045656 
  Aug vs Jan  |   .3158437   .0571951     5.52   0.000     .1236162    .5080712
- Sep vs Jan  |   .1951492   .0552251     3.53   0.027     .0095428    .3807555
+
  
 
  
@@ -758,9 +753,8 @@ putdocx begin, font("Calibri")
 
 local DepVars = "sumfoodgrp_nm freq_solids_nm"
 
-local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 
 * attention to include all socio-economic vars i.wi i.mum_educ i.mum_work ***
 
@@ -823,9 +817,8 @@ version 16: table region [pw = regional_wgt] , c(mean ebf_x n ebf_x) format(%9.1
 * First three regions		
 * Margins with region==`x'
 
-local ContVars ib12.int_month##i.region i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 
 logit ebf_x `ContVars' [pw = regional_wgt] 
 	
@@ -873,9 +866,8 @@ putdocx image ebf_month.tif, linebreak(1)
 *region 6  South    Andhra Pradesh(2),  Karnataka(16),  Kerala(17),  Tamil Nadu(31),  Telangana(36)  A&N islands (1) Puducherry (27) Lakshadweep (18)
 
 * RESIDENCE
-local ContVars ib12.int_month##i.rururb i.state i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 
 logit ebf_x `ContVars' [pw = national_wgt]  if agemos>=6 & agemos<24
 	
@@ -894,9 +886,8 @@ putdocx image ebf_month.tif, linebreak(1)
 
 * Mother's Employment
 tab mum_work round, m 
-local ContVars ib12.int_month##i.mum_work  i.state i.rururb i.wi i.mum_educ   ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 
 logit ebf_x `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
 	
@@ -914,9 +905,8 @@ putdocx paragraph, halign(left)
 putdocx image ebf_month.tif, linebreak(1)
 
 * Socio-Economic Status
-local ContVars ib12.int_month##i.wi i.state i.rururb i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days       ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 
 logit ebf_x `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
 	
@@ -938,9 +928,8 @@ putdocx image ebf_month.tif, linebreak(1)
 
 * AGE IN MONTHS
 * removed age in days from ContVars
-local ContVars ib12.int_month##i.agemos i.state i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord      ///
-	i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem * ADD AGE MONTHS  i.sex i.diar i.fever i.ari i.round
 
 logit ebf_x `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
 	
@@ -984,9 +973,9 @@ local depvar01 carb leg_nut dairy all_meat egg vita_fruit_veg fruit_veg ///
 	min_milk_freq_nbf mmf_all mad_all egg_meat zero_fv
 	
 * Variables that represent data from date of data collection
-local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus i.inst_birth ///
-	i.bord c.age_days c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
-
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
+	
 foreach var in `depvar01' {
 	di "`var'"
 		
@@ -1044,9 +1033,8 @@ putdocx save "`ExportPath'/`FileName'", append
 putdocx begin, font("Calibri") 	
 
 * Variables that represent data from date of data collection
-local ContVars i.int_month i.state i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 		
 logit cont_bf `ContVars' [pw = national_wgt] if agemos>=12 & agemos<24
 margins int_month
@@ -1062,31 +1050,6 @@ putdocx save "`ExportPath'/`FileName'", append
 
 
 putdocx begin, font("Calibri") 
-
-* Ever, current and early initation of breastfeeding
-* Seasonality of depvar01
-local depvar01 evbf currently_bf eibf prelacteal_milk prelacteal_sugarwater ///
-	prelacteal_water prelacteal_gripewater prelacteal_saltwater ///
-	prelacteal_formula prelacteal_honey prelacteal_janamghuti prelacteal_other 
-* Variables that represent data from date of birth
-local ContVars i.birthmonth i.state i.rururb i.wi i.mum_educ i.mum_work  ///
-	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days ///
-	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
-
-foreach var in `depvar01' {
-	di `depvar01'
-		
-	logit `var' `ContVars' [pw = national_wgt] if agemos<24
-	margins int_month
-	marginsplot, title(`var' by month of data collection) ytitle("Proportion") 
-	graph export `var'.tif, as(tif) replace
-
-	putdocx paragraph, halign(center)
-	putdocx image "`var'.tif"
-}
-putdocx save "`ExportPath'/`FileName'", append
-
-
 
 END
 
