@@ -120,7 +120,7 @@ tab sumfoodgrp_nm round, col
 * Data cleaning
 gen freq_solids_nm = freq_solids if freq_solids<8
 tab freq_solids_nm if agemos>=6 & agemos<24, m 
-tab  freq_solids_nm round if agemos>=6 & agemos<24, col
+tab freq_solids_nm round if agemos>=6 & agemos<24, col
 
 * set to missing all indicators with extreme small sample for monthly estimates
 
@@ -401,10 +401,10 @@ putdocx begin, font("Calibri")
 * ISSSF, mdd, mmf_all, egg_meat, dairy vita_fruit leafy_green
 * mmf_all does not have NFHS-3 so need to create different code
 
-
-local DepVars = "isssf mdd mmf_bf egg_meat dairy leg_nut vita_fruit leafy_green"
-local DepVars = "mmf_bf leg_nut"
-
+// local DepVars = "isssf mdd mmf_bf egg_meat dairy leg_nut vita_fruit leafy_green"
+// local DepVars = "mmf_bf leg_nut"
+// local DepVars = "dairy leafy_green vita_fruit"
+local DepVars = "dairy"
 
 foreach var of varlist `DepVars' {
 
@@ -413,12 +413,18 @@ foreach var of varlist `DepVars' {
 	margins round, saving(file1, replace)
 
 	* Adjustments are applied using control variables for month of data collection 
-	local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
-		i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
+// 	local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
+// 		i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 
+* testing with control variables
+* also use C:\Temp\Data\iycf_5surveys
+	local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work ///
+	i.anc4plus i.earlyanc i.csection i.inst_birth i.bord c.age_days ///
+	c.age_days#c.age_days i.sex i.cat_birth_wt i.diar i.fever i.ari i.round
+	
 	logit `var' `ContVars' [pw = national_wgt] 
 	* output by round of survey
-	margins round,  saving(file2, replace)
+	margins round, saving(file2, replace)
 
 	preserve
 	use file1, clear
@@ -436,7 +442,7 @@ foreach var of varlist `DepVars' {
  			, ///
  		   title("`var'") ///
  		   xlabel(1(1)5, valuelabel ) xtitle(" ")  /// ylabel(0.4(0.1)0.7)
- 		   ytitle(Proportion) legend(pos(3) ring(0) col(1)  region(lstyle(none)) ///
+ 		   ytitle(Proportion) legend(pos(2) ring(0) col(1)  region(lstyle(none)) ///
  		   order(1 "Unadjusted - Midpoint" 4 "Adjusted - Midpoint" )) scheme(s1mono) ///
  		   graphregion(color(white)) bgcolor(white) 
  	graph export `var'.tif, as(tif) replace
@@ -658,8 +664,11 @@ scatter state int_month [w=counts*0.5] , msymbol(circle_hollow)
 local ContVars ib12.int_month i.state i.rururb i.wi i.mum_educ i.mum_work i.anc4plus ///
 	i.bord i.hh_mem c.age_days c.age_days#c.age_days i.sex i.diar i.fever i.ari i.round
 	
-local DepVars = "mdd"
+// local DepVars = "mdd"
+// local DepVars = "dairy"
+local DepVars = "leafy_green"
 // local DepVars = "vita_fruit"
+
 
 logit `DepVars' `ContVars' [pw = national_wgt] if agemos>=6 & agemos<24
 margins int_month
